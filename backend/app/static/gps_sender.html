@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Fleet Tracker — GPS Sender</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0F172A;
+      color: #F1F5F9;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 24px 16px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 32px;
+      margin-top: 16px;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: #64FFDA;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .logo-text { font-size: 20px; font-weight: 700; }
+    .logo-sub  { font-size: 11px; color: #64FFDA; margin-top: 1px; }
+
+    .card {
+      background: #1E293B;
+      border: 1px solid #334155;
+      border-radius: 20px;
+      padding: 24px;
+      width: 100%;
+      max-width: 360px;
+      margin-bottom: 16px;
+    }
+
+    .label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      color: #64FFDA;
+      margin-bottom: 6px;
+    }
+
+    .value {
+      font-size: 18px;
+      font-weight: 600;
+      font-family: 'Courier New', monospace;
+      color: #F1F5F9;
+      word-break: break-all;
+    }
+
+    .value.small { font-size: 13px; }
+
+    .divider {
+      height: 1px;
+      background: #334155;
+      margin: 16px 0;
+    }
+
+    /* Status badge */
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .badge.idle     { background: #1E293B; border: 1px solid #475569; color: #94A3B8; }
+    .badge.tracking { background: rgba(100,255,218,0.1); border: 1px solid rgba(100,255,218,0.3); color: #64FFDA; }
+    .badge.error    { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.3); color: #F87171; }
+
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+    }
+
+    .dot.idle     { background: #475569; }
+    .dot.tracking { background: #64FFDA; animation: pulse 1.5s ease-in-out infinite; box-shadow: 0 0 6px #64FFDA; }
+    .dot.error    { background: #F87171; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    /* Big toggle button */
+    .btn {
+      width: 100%;
+      max-width: 360px;
+      height: 60px;
+      border: none;
+      border-radius: 16px;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 16px;
+      letter-spacing: 0.02em;
+    }
+
+    .btn.start { background: #64FFDA; color: #0F172A; }
+    .btn.stop  { background: #F87171; color: #0F172A; }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .ping-count {
+      text-align: center;
+      font-size: 13px;
+      color: #94A3B8;
+    }
+
+    .ping-count span { color: #64FFDA; font-weight: 700; }
+
+    .log-box {
+      background: #0F172A;
+      border: 1px solid #1E293B;
+      border-radius: 12px;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #64748B;
+      max-height: 120px;
+      overflow-y: auto;
+      margin-top: 12px;
+    }
+
+    .log-box .ok   { color: #64FFDA; }
+    .log-box .err  { color: #F87171; }
+    .log-box .info { color: #94A3B8; }
+
+    .accuracy-bar {
+      height: 4px;
+      background: #334155;
+      border-radius: 2px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+
+    .accuracy-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: #64FFDA;
+      transition: width 0.5s;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Logo -->
+  <div class="logo">
+    <div class="logo-icon">📡</div>
+    <div>
+      <div class="logo-text">FleetOS</div>
+      <div class="logo-sub">GPS SENDER</div>
+    </div>
+  </div>
+
+  <!-- Device card -->
+  <div class="card">
+    <div class="label">DEVICE ID</div>
+    <div class="value small" id="deviceId">Loading…</div>
+
+    <div class="divider"></div>
+
+    <div class="label">STATUS</div>
+    <div class="status-row">
+      <span class="badge idle" id="statusBadge">
+        <span class="dot idle" id="statusDot"></span>
+        <span id="statusText">Idle</span>
+      </span>
+      <span id="pingCount" style="font-size:12px; color:#94A3B8;">0 pings</span>
+    </div>
+  </div>
+
+  <!-- Location card -->
+  <div class="card">
+    <div class="label">COORDINATES</div>
+    <div class="value" id="coords">—</div>
+
+    <div class="divider"></div>
+
+    <div class="label">ACCURACY</div>
+    <div id="accuracy" style="font-size:13px; color:#94A3B8;">—</div>
+    <div class="accuracy-bar">
+      <div class="accuracy-fill" id="accuracyFill" style="width:0%"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="label">LAST PING</div>
+    <div id="lastPing" style="font-size:13px; color:#94A3B8;">—</div>
+
+    <!-- Mini log -->
+    <div class="log-box" id="logBox">
+      <span class="info">Waiting for GPS…</span>
+    </div>
+  </div>
+
+  <!-- Toggle button -->
+  <button class="btn start" id="toggleBtn" onclick="toggle()">
+    Start Tracking
+  </button>
+
+  <div class="ping-count">
+    Sends GPS to backend every <span>5 seconds</span>
+  </div>
+
+<script>
+  // ── Config ─────────────────────────────────────────────────────────────────
+  // Backend URL — must be accessible from this phone on your WiFi
+  const BACKEND_URL  = 'http://192.168.31.205:8000';
+  const INTERVAL_MS  = 5000;
+
+  // ── State ──────────────────────────────────────────────────────────────────
+  let intervalId  = null;
+  let pingCount   = 0;
+  let isTracking  = false;
+  let deviceId    = getDeviceId();
+
+  document.getElementById('deviceId').textContent = deviceId;
+
+  // ── Device ID ──────────────────────────────────────────────────────────────
+  function getDeviceId() {
+    let id = localStorage.getItem('fleet_device_id');
+    if (!id) {
+      // Generate a random 16-char hex ID and persist it
+      id = Array.from(crypto.getRandomValues(new Uint8Array(8)))
+               .map(b => b.toString(16).padStart(2,'0')).join('');
+      localStorage.setItem('fleet_device_id', id);
+    }
+    return id;
+  }
+
+  // ── Toggle ─────────────────────────────────────────────────────────────────
+  function toggle() {
+    if (isTracking) {
+      stopTracking();
+    } else {
+      startTracking();
+    }
+  }
+
+  function startTracking() {
+    if (!navigator.geolocation) {
+      setStatus('error', 'GPS not supported');
+      return;
+    }
+
+    isTracking = true;
+    setStatus('tracking', 'Acquiring GPS…');
+    updateBtn();
+
+    // Send immediately, then every 5 s
+    sendGPS();
+    intervalId = setInterval(sendGPS, INTERVAL_MS);
+  }
+
+  function stopTracking() {
+    isTracking = false;
+    clearInterval(intervalId);
+    intervalId = null;
+    setStatus('idle', 'Stopped');
+    updateBtn();
+    log('info', 'Tracking stopped.');
+  }
+
+  // ── GPS + HTTP POST ────────────────────────────────────────────────────────
+  function sendGPS() {
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude, accuracy } = pos.coords;
+        const timestamp = new Date().toISOString();
+
+        // Update UI
+        document.getElementById('coords').textContent =
+          `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+        document.getElementById('accuracy').textContent =
+          `±${Math.round(accuracy)} m`;
+        // Accuracy bar: 100% = 5m, 0% = 500m+
+        const pct = Math.max(0, Math.min(100, 100 - (accuracy / 500) * 100));
+        document.getElementById('accuracyFill').style.width = pct + '%';
+
+        setStatus('tracking', 'Live');
+
+        // POST to backend
+        try {
+          const res = await fetch(`${BACKEND_URL}/location`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ device_id: deviceId, latitude, longitude, timestamp })
+          });
+
+          if (res.ok) {
+            pingCount++;
+            document.getElementById('pingCount').textContent = `${pingCount} pings`;
+            document.getElementById('lastPing').textContent =
+              new Date().toLocaleTimeString();
+            log('ok', `OK — ping #${pingCount} (±${Math.round(accuracy)}m)`);
+          } else {
+            log('err', `HTTP ${res.status} from backend`);
+          }
+        } catch (err) {
+          log('err', `Network error: ${err.message}`);
+          setStatus('error', 'Backend unreachable');
+        }
+      },
+      (err) => {
+        const msgs = {
+          1: 'Permission denied — allow location in browser',
+          2: 'GPS unavailable — go outside',
+          3: 'GPS timeout — retrying…'
+        };
+        const msg = msgs[err.code] || 'GPS error';
+        setStatus('error', msg);
+        log('err', msg);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  }
+
+  // ── UI helpers ─────────────────────────────────────────────────────────────
+  function setStatus(type, text) {
+    const badge = document.getElementById('statusBadge');
+    const dot   = document.getElementById('statusDot');
+    const label = document.getElementById('statusText');
+    badge.className = `badge ${type}`;
+    dot.className   = `dot ${type}`;
+    label.textContent = text;
+  }
+
+  function updateBtn() {
+    const btn = document.getElementById('toggleBtn');
+    if (isTracking) {
+      btn.textContent = 'Stop Tracking';
+      btn.className   = 'btn stop';
+    } else {
+      btn.textContent = 'Start Tracking';
+      btn.className   = 'btn start';
+    }
+  }
+
+  function log(type, msg) {
+    const box  = document.getElementById('logBox');
+    const time = new Date().toLocaleTimeString();
+    const line = document.createElement('div');
+    line.className = type;
+    line.textContent = `[${time}] ${msg}`;
+    box.appendChild(line);
+    box.scrollTop = box.scrollHeight;
+    // Keep last 20 lines only
+    while (box.children.length > 20) box.removeChild(box.firstChild);
+  }
+</script>
+
+</body>
+</html>
