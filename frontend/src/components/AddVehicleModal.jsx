@@ -42,7 +42,7 @@ export default function AddVehicleModal({ isOpen, onClose, onVehicleAdded }) {
     : ''
 
   const shareUrl = createdVehicle
-    ? `${window.location.origin}/share/${createdVehicle.share_code}`
+    ? `${BACKEND_HOST}/share/${createdVehicle.share_code}`
     : ''
 
   const qrSrc = createdVehicle

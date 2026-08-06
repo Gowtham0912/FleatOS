@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FleetOS — Shared Live Tracking</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #F8FAFC;
+      color: #0F172A;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #FFFFFF;
+      border-bottom: 1px solid #E2E8F0;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 1000;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      background: #2563EB;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #FFFFFF;
+      font-size: 16px;
+    }
+
+    .title { font-size: 14px; font-weight: 700; color: #0F172A; }
+    .subtitle { font-size: 11px; color: #64748B; }
+
+    #map {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+    }
+
+    .info-card {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 14px 18px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      z-index: 1000;
+      min-width: 240px;
+    }
+
+    .info-title { font-size: 14px; font-weight: 700; color: #0F172A; margin-bottom: 2px; }
+    .info-coords { font-size: 12px; font-family: monospace; color: #2563EB; font-weight: 600; margin-top: 4px; }
+    .info-time { font-size: 11px; color: #64748B; margin-top: 2px; }
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      background: #ECFDF5;
+      color: #059669;
+      margin-bottom: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-icon">📡</div>
+      <div>
+        <div class="title" id="vehicleName">Shared Live Tracking</div>
+        <div class="subtitle" id="vehicleId">FleetOS Public View</div>
+      </div>
+    </div>
+    <div class="status-chip">
+      <span>●</span> Live Streaming
+    </div>
+  </header>
+
+  <div id="map"></div>
+
+  <div class="info-card" id="infoCard">
+    <div class="info-title" id="cardName">Loading vehicle…</div>
+    <div class="info-coords" id="cardCoords">—</div>
+    <div class="info-time" id="cardTime">Fetching live location…</div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    const BACKEND_URL = window.location.origin;
+    const shareCode   = window.location.pathname.split('/').pop();
+
+    let map = L.map('map').setView([20.0, 78.0], 5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    let marker = null;
+
+    const markerIcon = L.divIcon({
+      className: '',
+      html: `
+        <div style="width:24px; height:24px; border-radius:50%; background:#2563EB; border:3px solid #FFF; box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>
+      `,
+      iconSize: [24, 24],
+      iconAnchor: [12, 12]
+    });
+
+    async function fetchLocation() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/vehicles/share/${shareCode}`);
+        if (!res.ok) throw new Error('Link expired or not found');
+
+        const vehicle = await res.json();
+        document.getElementById('vehicleName').textContent = vehicle.name;
+        document.getElementById('cardName').textContent    = vehicle.name;
+        document.getElementById('vehicleId').textContent   = `Device ID: ${vehicle.device_id}`;
+
+        if (vehicle.latest_location) {
+          const { latitude, longitude, timestamp } = vehicle.latest_location;
+          const pos = [latitude, longitude];
+
+          document.getElementById('cardCoords').textContent = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+          document.getElementById('cardTime').textContent   = `Updated: ${new Date(timestamp).toLocaleTimeString()}`;
+
+          if (!marker) {
+            marker = L.marker(pos, { icon: markerIcon }).addTo(map);
+            map.setView(pos, 15);
+          } else {
+            marker.setLatLng(pos);
+          }
+        } else {
+          document.getElementById('cardTime').textContent = 'Waiting for GPS pings…';
+        }
+      } catch (err) {
+        document.getElementById('cardName').textContent = 'Shared Link Error';
+        document.getElementById('cardTime').textContent = err.message;
+      }
+    }
+
+    fetchLocation();
+    setInterval(fetchLocation, 5000);
+  </script>
+</body>
+</html>
