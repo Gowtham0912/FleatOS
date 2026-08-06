@@ -237,16 +237,21 @@
   // ── State ──────────────────────────────────────────────────────────────────
   let intervalId  = null;
   let pingCount   = 0;
-  let isTracking  = false;
-  let deviceId    = getDeviceId();
+  // ── Code & Device ID ───────────────────────────────────────────────────────
+  const urlParams   = new URLSearchParams(window.location.search);
+  let pairingCode = urlParams.get('code') || localStorage.getItem('fleet_pairing_code') || '';
+  if (urlParams.get('code')) {
+    localStorage.setItem('fleet_pairing_code', urlParams.get('code'));
+  }
 
-  document.getElementById('deviceId').textContent = deviceId;
+  let deviceId = getDeviceId();
+  document.getElementById('deviceId').textContent = pairingCode
+    ? `${deviceId} (Code: ${pairingCode})`
+    : deviceId;
 
-  // ── Device ID ──────────────────────────────────────────────────────────────
   function getDeviceId() {
     let id = localStorage.getItem('fleet_device_id');
     if (!id) {
-      // Generate a random 16-char hex ID and persist it
       id = Array.from(crypto.getRandomValues(new Uint8Array(8)))
                .map(b => b.toString(16).padStart(2,'0')).join('');
       localStorage.setItem('fleet_device_id', id);
@@ -299,7 +304,6 @@
           `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
         document.getElementById('accuracy').textContent =
           `±${Math.round(accuracy)} m`;
-        // Accuracy bar: 100% = 5m, 0% = 500m+
         const pct = Math.max(0, Math.min(100, 100 - (accuracy / 500) * 100));
         document.getElementById('accuracyFill').style.width = pct + '%';
 
@@ -307,10 +311,13 @@
 
         // POST to backend
         try {
+          const payload = { device_id: deviceId, latitude, longitude, timestamp };
+          if (pairingCode) payload.pairing_code = pairingCode;
+
           const res = await fetch(`${BACKEND_URL}/location`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ device_id: deviceId, latitude, longitude, timestamp })
+            body: JSON.stringify(payload)
           });
 
           if (res.ok) {

@@ -1,10 +1,13 @@
-import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Truck, Navigation, Wifi, WifiOff } from 'lucide-react'
+import { NavLink, Link } from 'react-router-dom'
+import { LayoutDashboard, Truck, Navigation, Wifi, WifiOff, LogOut, User as UserIcon } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 
 /**
- * Sidebar — simple clean left navigation panel.
+ * Sidebar — simple clean left navigation panel with user profile.
  */
 export default function Sidebar({ isConnected, vehicleCount }) {
+  const { user, logout } = useAuth()
+
   const navItems = [
     { to: '/',         icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/vehicles', icon: Truck,           label: 'Vehicles'  },
@@ -45,9 +48,39 @@ export default function Sidebar({ isConnected, vehicleCount }) {
         ))}
       </nav>
 
-      {/* ── Connection status ─────────────────────────────────────────────── */}
+      {/* ── User Profile & Status ─────────────────────────────────────────── */}
       <div className="p-4 border-t border-slate-200 space-y-3">
-        <div className="flex items-center justify-between px-1">
+        {/* User account chip */}
+        {user ? (
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 flex items-center justify-between">
+            <div className="flex items-center gap-2 overflow-hidden">
+              <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold shrink-0">
+                {user.full_name ? user.full_name[0].toUpperCase() : 'U'}
+              </div>
+              <div className="truncate">
+                <p className="text-xs font-bold text-slate-900 truncate">{user.full_name}</p>
+                <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
+              </div>
+            </div>
+            <button
+              onClick={logout}
+              title="Sign Out"
+              className="text-slate-400 hover:text-rose-600 p-1 rounded transition-colors cursor-pointer"
+            >
+              <LogOut size={14} />
+            </button>
+          </div>
+        ) : (
+          <Link
+            to="/login"
+            className="flex items-center justify-center gap-2 w-full py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-600 rounded-lg text-xs font-semibold transition-colors"
+          >
+            <UserIcon size={14} />
+            <span>Sign In / Register</span>
+          </Link>
+        )}
+
+        <div className="flex items-center justify-between px-1 pt-1">
           <div className="flex items-center gap-2">
             {isConnected
               ? <Wifi size={14} className="text-emerald-600" />
@@ -60,9 +93,9 @@ export default function Sidebar({ isConnected, vehicleCount }) {
           <span className={`status-dot ${isConnected ? 'active' : 'inactive'}`} />
         </div>
 
-        <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-          <p className="text-xs text-slate-500 font-medium">Tracked Devices</p>
-          <p className="text-lg font-bold text-slate-900 mt-0.5">{vehicleCount}</p>
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+          <p className="text-[11px] text-slate-500 font-medium">Tracked Devices</p>
+          <p className="text-base font-bold text-slate-900 mt-0.5">{vehicleCount}</p>
         </div>
       </div>
     </aside>

@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import { Wifi, WifiOff, Activity, Smartphone, X, QrCode } from 'lucide-react'
+import { Wifi, WifiOff, Activity, Smartphone, X, QrCode, Plus } from 'lucide-react'
 import { format } from 'date-fns'
+import AddVehicleModal from './AddVehicleModal'
+import { useAuth } from '../context/AuthContext'
 
 // The backend host — live Render public backend
 const BACKEND_HOST = 'https://fleet-backend-5i1b.onrender.com'
@@ -8,16 +10,17 @@ const GPS_URL = `${BACKEND_HOST}/gps`
 
 /**
  * TopBar — shows page title, last update time, WS connection status,
- *          and a "Connect Phone" button that displays a scan-to-track QR code.
+ *          and buttons to add vehicles and connect phones via QR code.
  */
-export default function TopBar({ title, isConnected, lastMessage }) {
+export default function TopBar({ title, isConnected, lastMessage, onVehicleAdded }) {
   const [showQr, setShowQr] = useState(false)
+  const [showAddModal, setShowAddModal] = useState(false)
+  const { user } = useAuth()
 
   const lastTime = lastMessage?.timestamp
     ? format(new Date(lastMessage.timestamp), 'HH:mm:ss')
     : null
 
-  // QR image via free Google Charts / QR server API (clean dark on white)
   const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(GPS_URL)}&bgcolor=ffffff&color=0f172a&margin=10`
 
   return (
@@ -32,20 +35,32 @@ export default function TopBar({ title, isConnected, lastMessage }) {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           {/* Activity flash on new message */}
           {lastMessage && (
-            <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 animate-fade-in" key={lastMessage.timestamp}>
+            <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 animate-fade-in mr-1" key={lastMessage.timestamp}>
               <Activity size={13} />
               <span>Ping received</span>
             </div>
+          )}
+
+          {/* Add Vehicle Button (for logged in users) */}
+          {user && (
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold
+                         bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm cursor-pointer"
+            >
+              <Plus size={14} />
+              Add Vehicle
+            </button>
           )}
 
           {/* Connect Phone button */}
           <button
             id="connect-phone-btn"
             onClick={() => setShowQr(true)}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold
                        bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm cursor-pointer"
           >
             <Smartphone size={13} />
@@ -53,7 +68,7 @@ export default function TopBar({ title, isConnected, lastMessage }) {
           </button>
 
           {/* WS Status chip */}
-          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border ${
+          <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border ${
             isConnected
               ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
               : 'bg-rose-50 border-rose-200 text-rose-700'
@@ -65,6 +80,13 @@ export default function TopBar({ title, isConnected, lastMessage }) {
           </div>
         </div>
       </header>
+
+      {/* Add Vehicle Modal */}
+      <AddVehicleModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onVehicleAdded={onVehicleAdded}
+      />
 
       {/* ── QR Modal ──────────────────────────────────────────────────── */}
       {showQr && (
