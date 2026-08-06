@@ -38,7 +38,19 @@ async def get_db() -> AsyncSession:
             await session.close()
 
 
+from sqlalchemy import text
+
+
 async def init_db():
-    """Create all tables on startup (dev mode)."""
+    """Create all tables and auto-migrate missing columns on startup."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+        # Auto-migrate missing columns for existing tables
+        await conn.execute(text("""
+            ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS user_id BIGINT REFERENCES users(id) ON DELETE CASCADE;
+            ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS pairing_code VARCHAR(32);
+            ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS share_code VARCHAR(32);
+            UPDATE vehicles SET pairing_code = 'TRK-' || UPPER(SUBSTRING(MD5(RANDOM()::TEXT) FROM 1 FOR 6)) WHERE pairing_code IS NULL;
+            UPDATE vehicles SET share_code = 'SHR-' || UPPER(SUBSTRING(MD5(RANDOM()::TEXT) FROM 1 FOR 6)) WHERE share_code IS NULL;
+        """))
