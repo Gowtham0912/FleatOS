@@ -3,7 +3,7 @@ Pydantic schemas — request/response data transfer objects.
 """
 
 from datetime import datetime
-from pydantic import BaseModel, Field, EmailStr, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 
 # ── Auth schemas ────────────────────────────────────────────────────────────
