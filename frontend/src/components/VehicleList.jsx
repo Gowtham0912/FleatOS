@@ -1,12 +1,14 @@
-import { RefreshCw, Search } from 'lucide-react'
+import { RefreshCw, Search, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import VehicleCard from './VehicleCard'
 
 /**
- * VehicleList — scrollable panel listing all tracked vehicles.
+ * VehicleList — scrollable panel listing tracked vehicles.
  */
-export default function VehicleList({ vehicles, locations, selectedVehicle, onSelect, onRefresh, isLoading }) {
+export default function VehicleList({ vehicles, locations, selectedVehicle, onSelect, onDelete, onClearUnlinked, onRefresh, isLoading }) {
   const [query, setQuery] = useState('')
+
+  const unlinkedCount = vehicles.filter((v) => v.user_id === null).length
 
   const filtered = vehicles.filter(
     (v) =>
@@ -26,14 +28,25 @@ export default function VehicleList({ vehicles, locations, selectedVehicle, onSe
               ({vehicles.length})
             </span>
           </h2>
-          <button
-            onClick={onRefresh}
-            disabled={isLoading}
-            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-            title="Refresh list"
-          >
-            <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
-          </button>
+          <div className="flex items-center gap-1">
+            {unlinkedCount > 0 && onClearUnlinked && (
+              <button
+                onClick={onClearUnlinked}
+                className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 transition-colors"
+                title={`Clean up ${unlinkedCount} unlinked guest devices`}
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
+            <button
+              onClick={onRefresh}
+              disabled={isLoading}
+              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+              title="Refresh list"
+            >
+              <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+            </button>
+          </div>
         </div>
 
         {/* Search */}
@@ -73,6 +86,7 @@ export default function VehicleList({ vehicles, locations, selectedVehicle, onSe
               location={locations[vehicle.id]}
               isSelected={selectedVehicle?.id === vehicle.id}
               onSelect={onSelect}
+              onDelete={onDelete}
             />
           ))
         )}

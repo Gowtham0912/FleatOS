@@ -137,6 +137,37 @@ async def get_vehicle_history(
             detail=f"Vehicle {vehicle_id} not found.",
         )
 
-    history = await get_location_history(db, vehicle_id, limit=limit)
-    return history
+from sqlalchemy import delete
+
+@router.delete(
+    "/unlinked",
+    summary="Delete all vehicles not linked to any user account",
+)
+async def delete_unlinked_vehicles(db: AsyncSession = Depends(get_db)):
+    """Purge all vehicles where user_id IS NULL."""
+    from app.models import Vehicle
+    await db.execute(delete(Vehicle).where(Vehicle.user_id.is_(None)))
+    await db.commit()
+    return {"message": "Unlinked vehicles deleted successfully."}
+
+
+@router.delete(
+    "/{vehicle_id}",
+    summary="Delete a specific vehicle",
+)
+async def delete_vehicle_by_id(
+    vehicle_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete a specific vehicle by ID."""
+    vehicle = await get_vehicle_by_id(db, vehicle_id)
+    if vehicle is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Vehicle {vehicle_id} not found.",
+        )
+    await db.delete(vehicle)
+    await db.commit()
+    return {"message": f"Vehicle {vehicle_id} deleted successfully."}
+
 

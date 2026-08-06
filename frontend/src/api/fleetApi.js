@@ -115,6 +115,30 @@ export async function fetchVehicleHistory(vehicleId, limit = 50) {
 }
 
 /**
+ * Delete a specific vehicle.
+ */
+export async function deleteVehicle(vehicleId) {
+  const res = await fetch(`${BASE_URL}/vehicles/${vehicleId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  })
+  if (!res.ok) throw new Error('Failed to delete vehicle')
+  return res.json()
+}
+
+/**
+ * Delete all unlinked legacy vehicles.
+ */
+export async function deleteUnlinkedVehicles() {
+  const res = await fetch(`${BASE_URL}/vehicles/unlinked`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  })
+  if (!res.ok) throw new Error('Failed to delete unlinked vehicles')
+  return res.json()
+}
+
+/**
  * Health check.
  */
 export async function checkHealth() {

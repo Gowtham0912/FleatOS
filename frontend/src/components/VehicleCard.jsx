@@ -1,13 +1,13 @@
-import { Truck, MapPin, Clock } from 'lucide-react'
+import { Truck, MapPin, Clock, Trash2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { useState, useEffect } from 'react'
 
 /**
- * VehicleCard — a single vehicle row in the sidebar vehicle list.
+ * VehicleCard — a single vehicle row in the sidebar vehicle list with delete action.
  */
 const ACTIVE_THRESHOLD_MS = 2 * 60 * 1000   // 2 minutes
 
-export default function VehicleCard({ vehicle, location, isSelected, onSelect }) {
+export default function VehicleCard({ vehicle, location, isSelected, onSelect, onDelete }) {
   const hasLocation = !!location
 
   const [, setTick] = useState(0)
@@ -24,10 +24,15 @@ export default function VehicleCard({ vehicle, location, isSelected, onSelect })
     ? formatDistanceToNow(new Date(location.timestamp), { addSuffix: true })
     : 'No location yet'
 
+  const handleDelete = (e) => {
+    e.stopPropagation()
+    if (onDelete) onDelete(vehicle.id)
+  }
+
   return (
-    <button
+    <div
       onClick={() => onSelect(vehicle)}
-      className={`w-full text-left p-3.5 rounded-lg border transition-all cursor-pointer ${
+      className={`w-full text-left p-3.5 rounded-lg border transition-all cursor-pointer group ${
         isSelected
           ? 'bg-blue-50/70 border-blue-500 shadow-sm'
           : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'
@@ -35,17 +40,29 @@ export default function VehicleCard({ vehicle, location, isSelected, onSelect })
     >
       {/* ── Header row ─────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-1.5">
-        <div className="flex items-center gap-2">
-          <div className={`w-6 h-6 rounded flex items-center justify-center ${
+        <div className="flex items-center gap-2 overflow-hidden">
+          <div className={`w-6 h-6 rounded flex items-center justify-center shrink-0 ${
             isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'
           }`}>
             <Truck size={13} />
           </div>
-          <span className="text-xs font-bold text-slate-900 truncate max-w-[130px]">
+          <span className="text-xs font-bold text-slate-900 truncate">
             {vehicle.name}
           </span>
         </div>
-        <span className={`status-dot ${isActive ? 'active' : 'inactive'}`} title={isActive ? 'Active' : 'Offline'} />
+
+        <div className="flex items-center gap-2 shrink-0">
+          <span className={`status-dot ${isActive ? 'active' : 'inactive'}`} title={isActive ? 'Active' : 'Offline'} />
+          {onDelete && (
+            <button
+              onClick={handleDelete}
+              title="Delete Vehicle"
+              className="text-slate-300 hover:text-rose-600 p-0.5 rounded transition-colors cursor-pointer opacity-80 group-hover:opacity-100"
+            >
+              <Trash2 size={13} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── Device ID ──────────────────────────────────────────────────── */}
@@ -68,6 +85,6 @@ export default function VehicleCard({ vehicle, location, isSelected, onSelect })
       ) : (
         <p className="text-[11px] text-slate-400 italic">Waiting for location…</p>
       )}
-    </button>
+    </div>
   )
 }

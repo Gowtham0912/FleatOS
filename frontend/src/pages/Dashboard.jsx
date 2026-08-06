@@ -2,6 +2,7 @@ import { useState } from 'react'
 import FleetMap from '../components/FleetMap'
 import VehicleList from '../components/VehicleList'
 import TopBar from '../components/TopBar'
+import { deleteVehicle, deleteUnlinkedVehicles } from '../api/fleetApi'
 
 /**
  * Dashboard page — simple clean live-tracking view.
@@ -13,12 +14,32 @@ export default function Dashboard({ vehicles, locations, isLoading, lastMessage,
     setSelectedVehicle((prev) => prev?.id === vehicle.id ? null : vehicle)
   }
 
+  const handleDelete = async (vehicleId) => {
+    try {
+      await deleteVehicle(vehicleId)
+      if (selectedVehicle?.id === vehicleId) setSelectedVehicle(null)
+      if (onRefresh) onRefresh()
+    } catch (err) {
+      alert('Failed to delete vehicle: ' + err.message)
+    }
+  }
+
+  const handleClearUnlinked = async () => {
+    try {
+      await deleteUnlinkedVehicles()
+      if (onRefresh) onRefresh()
+    } catch (err) {
+      alert('Failed to clear unlinked devices: ' + err.message)
+    }
+  }
+
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <TopBar
         title="Live Map"
         isConnected={isConnected}
         lastMessage={lastMessage}
+        onVehicleAdded={onRefresh}
       />
 
       <div className="flex flex-1 min-h-0">
@@ -63,6 +84,8 @@ export default function Dashboard({ vehicles, locations, isLoading, lastMessage,
           locations={locations}
           selectedVehicle={selectedVehicle}
           onSelect={handleSelect}
+          onDelete={handleDelete}
+          onClearUnlinked={handleClearUnlinked}
           onRefresh={onRefresh}
           isLoading={isLoading}
         />
