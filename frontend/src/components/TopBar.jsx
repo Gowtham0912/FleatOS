@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { Wifi, WifiOff, Activity, Smartphone, X, QrCode } from 'lucide-react'
 import { format } from 'date-fns'
 
-// The backend host — phone must open this on the same WiFi
-const BACKEND_HOST = 'http://192.168.31.205:8000'
+// The backend host — live Render public backend
+const BACKEND_HOST = 'https://fleet-backend-5i1b.onrender.com'
 const GPS_URL = `${BACKEND_HOST}/gps`
 
 /**

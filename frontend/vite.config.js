@@ -6,15 +6,16 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      // Proxy API calls to the FastAPI backend during development
+      // Proxy API calls to the Render FastAPI backend
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'https://fleet-backend-5i1b.onrender.com',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
       '/ws': {
-        target: 'ws://localhost:8000',
+        target: 'wss://fleet-backend-5i1b.onrender.com',
         ws: true,
+        changeOrigin: true,
       },
     },
   },

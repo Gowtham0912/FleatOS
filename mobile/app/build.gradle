@@ -18,7 +18,7 @@ android {
         // Change this to your PC's local IP address when testing on a real phone.
         // Find your IP: run `ipconfig` in cmd → look for IPv4 under your WiFi adapter
         // Example: buildConfigField "String", "BASE_URL", '"http://192.168.1.100:8000"'
-        buildConfigField "String", "BASE_URL", '"https://itchy-jokes-like.loca.lt"'  // public tunnel
+        buildConfigField "String", "BASE_URL", '"https://fleet-backend-5i1b.onrender.com"'
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
