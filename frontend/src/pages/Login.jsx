@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react_router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Navigation, Lock, Mail, AlertCircle } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
