@@ -104,12 +104,15 @@ async def create_user_vehicle(
     return vehicle
 
 
+from sqlalchemy import func
+
 async def get_vehicle_by_share_code(
     db: AsyncSession, share_code: str
 ) -> Vehicle | None:
     """Return a vehicle by its public share code."""
+    code = share_code.strip().upper()
     res = await db.execute(
-        select(Vehicle).where(Vehicle.share_code == share_code.strip().upper())
+        select(Vehicle).where(func.upper(Vehicle.share_code) == code)
     )
     return res.scalar_one_or_none()
 

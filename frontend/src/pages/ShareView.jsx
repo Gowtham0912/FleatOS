@@ -12,21 +12,27 @@ export default function ShareView() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    async function load() {
+    let isMounted = true
+    async function load(isInitial = false) {
       try {
-        setIsLoading(true)
-        setError(null)
+        if (isInitial) setIsLoading(true)
         const data = await fetchSharedVehicle(shareCode)
-        setVehicle(data)
+        if (isMounted) {
+          setVehicle(data)
+          setError(null)
+        }
       } catch (err) {
-        setError(err.message)
+        if (isMounted) setError(err.message)
       } finally {
-        setIsLoading(false)
+        if (isMounted && isInitial) setIsLoading(false)
       }
     }
-    load()
-    const interval = setInterval(load, 5000)
-    return () => clearInterval(interval)
+    load(true)
+    const interval = setInterval(() => load(false), 5000)
+    return () => {
+      isMounted = false
+      clearInterval(interval)
+    }
   }, [shareCode])
 
   const locations = vehicle?.latest_location
