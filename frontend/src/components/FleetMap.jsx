@@ -1,5 +1,5 @@
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import L from 'leaflet'
 import { formatDistanceToNow } from 'date-fns'
 
@@ -49,14 +49,25 @@ function MapFlyTo({ position }) {
  * FleetMap — Leaflet map showing all vehicle markers.
  */
 export default function FleetMap({ vehicles, locations, selectedVehicle, lastWsMessage }) {
-  const DEFAULT_CENTER = [20.0, 78.0]   // India centre — fallback
+  const [userCenter, setUserCenter] = useState(null)
+
+  useEffect(() => {
+    if (navigator.geolocation && Object.keys(locations).length === 0) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setUserCenter([pos.coords.latitude, pos.coords.longitude]),
+        () => {}
+      )
+    }
+  }, [locations])
+
+  const DEFAULT_CENTER = [20.0, 78.0]
   const DEFAULT_ZOOM   = 5
 
   const firstLocation = Object.values(locations)[0]
   const initialCenter = firstLocation
     ? [firstLocation.latitude, firstLocation.longitude]
-    : DEFAULT_CENTER
-  const initialZoom = firstLocation ? 15 : DEFAULT_ZOOM
+    : (userCenter || DEFAULT_CENTER)
+  const initialZoom = (firstLocation || userCenter) ? 13 : DEFAULT_ZOOM
 
   const flyTarget = selectedVehicle && locations[selectedVehicle.id]
     ? [locations[selectedVehicle.id].latitude, locations[selectedVehicle.id].longitude]

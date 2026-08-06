@@ -237,6 +237,7 @@
   // ── State ──────────────────────────────────────────────────────────────────
   let intervalId  = null;
   let pingCount   = 0;
+  let isTracking  = false;
   // ── Code & Device ID ───────────────────────────────────────────────────────
   const urlParams   = new URLSearchParams(window.location.search);
   let pairingCode = urlParams.get('code') || localStorage.getItem('fleet_pairing_code') || '';
