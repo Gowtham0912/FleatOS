@@ -15,22 +15,22 @@ export default function VehicleList({ vehicles, locations, selectedVehicle, onSe
   )
 
   return (
-    <div className="flex flex-col h-full bg-navy-900 border-l border-navy-700 w-80 shrink-0">
+    <div className="flex flex-col h-full bg-white border-l border-slate-200 w-80 shrink-0">
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
-      <div className="px-4 pt-4 pb-3 border-b border-navy-700">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-white">
-            Vehicles
-            <span className="ml-2 text-xs text-slate-400 font-normal">
+      <div className="px-4 pt-4 pb-3 border-b border-slate-200">
+        <div className="flex items-center justify-between mb-2.5">
+          <h2 className="text-sm font-bold text-slate-900">
+            Vehicles & Devices
+            <span className="ml-1.5 text-xs text-slate-500 font-medium">
               ({vehicles.length})
             </span>
           </h2>
           <button
             onClick={onRefresh}
             disabled={isLoading}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-teal-400 hover:bg-navy-800 transition-all"
-            title="Refresh"
+            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+            title="Refresh list"
           >
             <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
           </button>
@@ -38,13 +38,13 @@ export default function VehicleList({ vehicles, locations, selectedVehicle, onSe
 
         {/* Search */}
         <div className="relative">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            placeholder="Search vehicles…"
+            placeholder="Search name or ID…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full bg-navy-800 border border-navy-700 rounded-lg pl-8 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-teal-400/50 transition-colors"
+            className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
           />
         </div>
       </div>
@@ -52,17 +52,17 @@ export default function VehicleList({ vehicles, locations, selectedVehicle, onSe
       {/* ── Vehicle cards ──────────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center h-32 text-slate-500">
-            <RefreshCw size={20} className="animate-spin mb-2" />
+          <div className="flex flex-col items-center justify-center h-32 text-slate-400">
+            <RefreshCw size={18} className="animate-spin mb-2 text-slate-400" />
             <p className="text-xs">Loading vehicles…</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 text-slate-500 text-center px-4">
-            <p className="text-sm font-medium mb-1">No vehicles found</p>
-            <p className="text-xs">
+          <div className="flex flex-col items-center justify-center h-32 text-slate-400 text-center px-4">
+            <p className="text-xs font-semibold text-slate-600 mb-1">No vehicles found</p>
+            <p className="text-xs text-slate-400">
               {vehicles.length === 0
-                ? 'Start the Android app to see your device here.'
-                : 'Try a different search term.'}
+                ? 'Scan the QR code to connect your first phone.'
+                : 'Try typing a different name.'}
             </p>
           </div>
         ) : (

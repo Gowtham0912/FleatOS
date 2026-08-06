@@ -4,10 +4,7 @@ import VehicleList from '../components/VehicleList'
 import TopBar from '../components/TopBar'
 
 /**
- * Dashboard page — the main live-tracking view.
- *
- * Layout:
- *   [Map fills centre] | [Vehicle list panel on right]
+ * Dashboard page — simple clean live-tracking view.
  */
 export default function Dashboard({ vehicles, locations, isLoading, lastMessage, isConnected, onRefresh }) {
   const [selectedVehicle, setSelectedVehicle] = useState(null)
@@ -36,12 +33,12 @@ export default function Dashboard({ vehicles, locations, isLoading, lastMessage,
 
           {/* Overlay: no vehicles hint */}
           {!isLoading && vehicles.length === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="glass-card px-8 py-6 text-center">
-                <p className="text-4xl mb-3">📱</p>
-                <p className="text-sm font-semibold text-white mb-1">No vehicles tracked yet</p>
-                <p className="text-xs text-slate-400">
-                  Click <strong className="text-teal-400">Connect Phone</strong> above to get the QR code
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-4">
+              <div className="bg-white border border-slate-200 shadow-md rounded-xl px-6 py-5 text-center max-w-xs">
+                <p className="text-3xl mb-2">📱</p>
+                <p className="text-sm font-bold text-slate-900 mb-1">No devices active</p>
+                <p className="text-xs text-slate-500">
+                  Click <strong className="text-blue-600">Connect Phone</strong> above to start tracking.
                 </p>
               </div>
             </div>
@@ -49,10 +46,10 @@ export default function Dashboard({ vehicles, locations, isLoading, lastMessage,
 
           {/* Selected vehicle info overlay (bottom-left) */}
           {selectedVehicle && locations[selectedVehicle.id] && (
-            <div className="absolute bottom-6 left-6 glass-card px-4 py-3 animate-slide-in">
-              <p className="text-xs text-teal-400 font-semibold mb-1">SELECTED</p>
-              <p className="text-sm font-bold text-white">{selectedVehicle.name}</p>
-              <p className="text-xs font-mono text-slate-300 mt-0.5">
+            <div className="absolute bottom-5 left-5 bg-white border border-slate-200 shadow-md rounded-lg px-4 py-3 animate-slide-in">
+              <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wider mb-0.5">Selected Device</p>
+              <p className="text-sm font-bold text-slate-900">{selectedVehicle.name}</p>
+              <p className="text-xs font-mono text-slate-600 mt-0.5">
                 {locations[selectedVehicle.id].latitude.toFixed(6)},{' '}
                 {locations[selectedVehicle.id].longitude.toFixed(6)}
               </p>

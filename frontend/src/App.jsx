@@ -19,7 +19,7 @@ export default function App() {
   const { vehicles, locations, isLoading, error, refresh } = useVehicles(lastMessage)
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-navy-900">
+    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 text-slate-800">
       {/* ── Sidebar ─────────────────────────────────────────────────────── */}
       <Sidebar
         isConnected={isConnected}

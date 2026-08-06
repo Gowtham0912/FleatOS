@@ -1,45 +1,35 @@
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import L from 'leaflet'
 import { formatDistanceToNow } from 'date-fns'
 
-// ── Custom marker icon ─────────────────────────────────────────────────────
+// ── Clean simple marker icon ────────────────────────────────────────────────
 const vehicleIcon = (isSelected) =>
   L.divIcon({
     className: '',
     html: `
       <div style="
         position: relative;
-        width: 36px;
-        height: 36px;
+        width: 32px;
+        height: 32px;
         display: flex;
         align-items: center;
         justify-content: center;
       ">
-        <!-- Pulse ring -->
         <div style="
-          position: absolute;
-          width: 36px;
-          height: 36px;
+          width: ${isSelected ? '24px' : '20px'};
+          height: ${isSelected ? '24px' : '20px'};
           border-radius: 50%;
-          background: ${isSelected ? 'rgba(100,255,218,0.25)' : 'rgba(100,255,218,0.15)'};
-          animation: markerPulse 2s ease-in-out infinite;
-        "></div>
-        <!-- Core dot -->
-        <div style="
-          width: 16px;
-          height: 16px;
-          border-radius: 50%;
-          background: #64FFDA;
-          border: 2.5px solid #0F172A;
-          box-shadow: 0 0 12px rgba(100,255,218,0.7);
-          z-index: 1;
+          background: ${isSelected ? '#2563EB' : '#0284C7'};
+          border: 3px solid #FFFFFF;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+          transition: all 0.2s ease;
         "></div>
       </div>
     `,
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
-    popupAnchor: [0, -20],
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+    popupAnchor: [0, -16],
   })
 
 /**
@@ -57,20 +47,17 @@ function MapFlyTo({ position }) {
 
 /**
  * FleetMap — Leaflet map showing all vehicle markers.
- * Animates to selected vehicle and flies on WS update.
  */
 export default function FleetMap({ vehicles, locations, selectedVehicle, lastWsMessage }) {
   const DEFAULT_CENTER = [20.0, 78.0]   // India centre — fallback
   const DEFAULT_ZOOM   = 5
 
-  // Determine initial centre: first vehicle with location, or default
   const firstLocation = Object.values(locations)[0]
   const initialCenter = firstLocation
     ? [firstLocation.latitude, firstLocation.longitude]
     : DEFAULT_CENTER
   const initialZoom = firstLocation ? 15 : DEFAULT_ZOOM
 
-  // Selected vehicle's current location for FlyTo
   const flyTarget = selectedVehicle && locations[selectedVehicle.id]
     ? [locations[selectedVehicle.id].latitude, locations[selectedVehicle.id].longitude]
     : null
@@ -87,10 +74,8 @@ export default function FleetMap({ vehicles, locations, selectedVehicle, lastWsM
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
-      {/* Fly to selected vehicle */}
       {flyTarget && <MapFlyTo position={flyTarget} />}
 
-      {/* Render a marker for every vehicle that has a location */}
       {vehicles.map((vehicle) => {
         const loc = locations[vehicle.id]
         if (!loc) return null
@@ -105,18 +90,18 @@ export default function FleetMap({ vehicles, locations, selectedVehicle, lastWsM
             icon={vehicleIcon(isSelected)}
           >
             <Popup>
-              <div style={{ fontFamily: 'Inter, sans-serif', minWidth: '180px' }}>
-                <p style={{ fontWeight: 700, fontSize: '14px', color: '#F1F5F9', marginBottom: '6px' }}>
+              <div style={{ fontFamily: 'Inter, sans-serif', minWidth: '170px' }}>
+                <p style={{ fontWeight: 700, fontSize: '13px', color: '#0F172A', marginBottom: '2px' }}>
                   {vehicle.name}
                 </p>
-                <p style={{ fontSize: '11px', color: '#94A3B8', fontFamily: 'monospace', marginBottom: '4px' }}>
+                <p style={{ fontSize: '11px', color: '#64748B', fontFamily: 'monospace', marginBottom: '6px' }}>
                   {vehicle.device_id}
                 </p>
-                <hr style={{ border: 'none', borderTop: '1px solid #334155', margin: '8px 0' }} />
-                <p style={{ fontSize: '12px', color: '#CBD5E1' }}>
+                <hr style={{ border: 'none', borderTop: '1px solid #E2E8F0', margin: '6px 0' }} />
+                <p style={{ fontSize: '11px', color: '#334155', fontWeight: 500 }}>
                   {loc.latitude.toFixed(6)}, {loc.longitude.toFixed(6)}
                 </p>
-                <p style={{ fontSize: '11px', color: '#64748B', marginTop: '4px' }}>
+                <p style={{ fontSize: '10px', color: '#94A3B8', marginTop: '3px' }}>
                   {formatDistanceToNow(new Date(loc.timestamp), { addSuffix: true })}
                 </p>
               </div>

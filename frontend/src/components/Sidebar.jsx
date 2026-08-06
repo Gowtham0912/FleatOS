@@ -1,8 +1,8 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Truck, Radio, Wifi, WifiOff } from 'lucide-react'
+import { LayoutDashboard, Truck, Navigation, Wifi, WifiOff } from 'lucide-react'
 
 /**
- * Sidebar — fixed left navigation panel.
+ * Sidebar — simple clean left navigation panel.
  */
 export default function Sidebar({ isConnected, vehicleCount }) {
   const navItems = [
@@ -11,16 +11,16 @@ export default function Sidebar({ isConnected, vehicleCount }) {
   ]
 
   return (
-    <aside className="flex flex-col w-64 min-h-screen bg-navy-900 border-r border-navy-700 shrink-0">
+    <aside className="flex flex-col w-60 min-h-screen bg-white border-r border-slate-200 shrink-0">
 
       {/* ── Logo ─────────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 px-6 py-5 border-b border-navy-700">
-        <div className="w-9 h-9 rounded-xl bg-teal-400 flex items-center justify-center shrink-0">
-          <Radio size={18} className="text-navy-900" />
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-200">
+        <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0 shadow-sm">
+          <Navigation size={16} className="text-white" />
         </div>
         <div>
-          <p className="text-sm font-bold text-white leading-none">FleetOS</p>
-          <p className="text-xs text-slate-400 mt-0.5">Live Tracking</p>
+          <p className="text-sm font-bold text-slate-900 leading-none">Fleet Tracker</p>
+          <p className="text-xs text-slate-500 mt-1">GPS Control Panel</p>
         </div>
       </div>
 
@@ -32,10 +32,10 @@ export default function Sidebar({ isConnected, vehicleCount }) {
             to={to}
             end={to === '/'}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+              `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 isActive
-                  ? 'bg-teal-400/10 text-teal-400 border border-teal-400/20'
-                  : 'text-slate-400 hover:text-white hover:bg-navy-800'
+                  ? 'bg-blue-50 text-blue-600 font-semibold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`
             }
           >
@@ -46,23 +46,23 @@ export default function Sidebar({ isConnected, vehicleCount }) {
       </nav>
 
       {/* ── Connection status ─────────────────────────────────────────────── */}
-      <div className="px-4 py-4 border-t border-navy-700 space-y-3">
-        <div className="flex items-center justify-between px-2">
+      <div className="p-4 border-t border-slate-200 space-y-3">
+        <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
             {isConnected
-              ? <Wifi size={14} className="text-teal-400" />
-              : <WifiOff size={14} className="text-red-400" />
+              ? <Wifi size={14} className="text-emerald-600" />
+              : <WifiOff size={14} className="text-rose-500" />
             }
-            <span className="text-xs text-slate-400">
-              {isConnected ? 'Live' : 'Reconnecting…'}
+            <span className="text-xs font-medium text-slate-600">
+              {isConnected ? 'Server Online' : 'Connecting…'}
             </span>
           </div>
           <span className={`status-dot ${isConnected ? 'active' : 'inactive'}`} />
         </div>
 
-        <div className="glass-card px-3 py-2.5">
-          <p className="text-xs text-slate-400">Tracked Vehicles</p>
-          <p className="text-xl font-bold text-white mt-0.5">{vehicleCount}</p>
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+          <p className="text-xs text-slate-500 font-medium">Tracked Devices</p>
+          <p className="text-lg font-bold text-slate-900 mt-0.5">{vehicleCount}</p>
         </div>
       </div>
     </aside>
