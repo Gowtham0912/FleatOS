@@ -1,11 +1,29 @@
 import { Truck, MapPin, Clock } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+import { useState, useEffect } from 'react'
 
 /**
  * VehicleCard — a single vehicle row in the sidebar vehicle list.
+ *
+ * A vehicle is considered "active" only if its last GPS ping arrived
+ * within the past 2 minutes. Anything older is shown as "inactive".
+ * The status dot re-evaluates every 30 s automatically.
  */
+const ACTIVE_THRESHOLD_MS = 2 * 60 * 1000   // 2 minutes
+
 export default function VehicleCard({ vehicle, location, isSelected, onSelect }) {
   const hasLocation = !!location
+
+  // Tick every 30 s so the status-dot goes grey automatically after 2 min of silence
+  const [, setTick] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 30_000)
+    return () => clearInterval(id)
+  }, [])
+
+  const isActive = hasLocation
+    ? Date.now() - new Date(location.timestamp).getTime() < ACTIVE_THRESHOLD_MS
+    : false
 
   const lastSeen = hasLocation
     ? formatDistanceToNow(new Date(location.timestamp), { addSuffix: true })
@@ -32,7 +50,7 @@ export default function VehicleCard({ vehicle, location, isSelected, onSelect })
             {vehicle.name}
           </span>
         </div>
-        <span className={`status-dot ${hasLocation ? 'active' : 'inactive'}`} />
+        <span className={`status-dot ${isActive ? 'active' : 'inactive'}`} />
       </div>
 
       {/* ── Device ID ──────────────────────────────────────────────────── */}

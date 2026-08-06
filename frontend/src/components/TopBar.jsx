@@ -70,7 +70,7 @@ export default function TopBar({ title, isConnected, lastMessage }) {
       {showQr && (
         <div
           id="qr-modal-backdrop"
-          className="fixed inset-0 z-50 flex items-center justify-center"
+          className="fixed inset-0 z-[9999] flex items-center justify-center"
           style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(6px)' }}
           onClick={(e) => e.target.id === 'qr-modal-backdrop' && setShowQr(false)}
         >

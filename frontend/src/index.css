@@ -26,6 +26,7 @@ body {
 .leaflet-container {
   background: #0F172A !important;
   font-family: 'Inter', sans-serif;
+  z-index: 0 !important;
 }
 
 /* Dark tile filter — makes OSM tiles look dark-themed */
