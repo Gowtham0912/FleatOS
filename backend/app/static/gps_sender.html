@@ -221,7 +221,7 @@
 
   <!-- Toggle button -->
   <button class="btn start" id="toggleBtn" onclick="toggle()">
-    Start Tracking
+    Start Sharing Location
   </button>
 
   <div class="ping-count">
@@ -383,10 +383,10 @@
   function updateBtn() {
     const btn = document.getElementById('toggleBtn');
     if (isTracking) {
-      btn.textContent = 'Stop Tracking';
+      btn.textContent = 'Stop Sharing Location';
       btn.className   = 'btn stop';
     } else {
-      btn.textContent = 'Start Tracking';
+      btn.textContent = 'Start Sharing Location';
       btn.className   = 'btn start';
     }
   }

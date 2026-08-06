@@ -120,7 +120,7 @@ export default function AddVehicleModal({ isOpen, onClose, onVehicleAdded }) {
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-900">{createdVehicle.name}</h2>
-              <p className="text-xs text-slate-500 mt-0.5">Private pairing code generated</p>
+              <p className="text-xs text-slate-500 mt-0.5">Scan QR code on mobile to start tracking</p>
             </div>
 
             {/* QR Code */}
@@ -128,39 +128,39 @@ export default function AddVehicleModal({ isOpen, onClose, onVehicleAdded }) {
               <img src={qrSrc} alt="Private QR Code" width={180} height={180} />
             </div>
 
-            {/* Pairing Code badge */}
+            {/* Mobile Tracker Link */}
             <div className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-center justify-between">
-              <div className="text-left">
-                <p className="text-[10px] text-slate-400 font-bold uppercase">Pairing Code</p>
-                <p className="text-sm font-mono font-bold text-blue-600">{createdVehicle.pairing_code}</p>
+              <div className="text-left truncate max-w-[240px]">
+                <p className="text-[10px] text-slate-400 font-bold uppercase">Mobile Tracker Link</p>
+                <p className="text-xs font-mono text-slate-700 truncate">{gpsUrl}</p>
               </div>
               <button
-                onClick={() => copyToClipboard(createdVehicle.pairing_code, 'code')}
-                className="flex items-center gap-1 text-xs text-slate-600 hover:text-slate-900 bg-white px-2.5 py-1 rounded border border-slate-200 shadow-2xs"
+                onClick={() => copyToClipboard(gpsUrl, 'code')}
+                className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 bg-white px-2.5 py-1 rounded border border-slate-200 shadow-2xs cursor-pointer font-semibold"
               >
-                {copiedCode ? <Check size={12} className="text-emerald-600" /> : <Copy size={12} />}
-                <span>{copiedCode ? 'Copied' : 'Copy'}</span>
+                {copiedCode ? <Check size={12} className="text-emerald-600" /> : <Smartphone size={12} />}
+                <span>{copiedCode ? 'Copied' : 'Copy Tracker'}</span>
               </button>
             </div>
 
-            {/* Share Link */}
+            {/* Share Map View Link */}
             <div className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-center justify-between">
               <div className="text-left truncate max-w-[240px]">
-                <p className="text-[10px] text-slate-400 font-bold uppercase">Public Share Link</p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase">Live Map View Link</p>
                 <p className="text-xs font-mono text-slate-700 truncate">{shareUrl}</p>
               </div>
               <button
                 onClick={() => copyToClipboard(shareUrl, 'link')}
-                className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 bg-white px-2.5 py-1 rounded border border-slate-200 shadow-2xs"
+                className="flex items-center gap-1 text-xs text-slate-600 hover:text-slate-900 bg-white px-2.5 py-1 rounded border border-slate-200 shadow-2xs cursor-pointer font-semibold"
               >
                 {copiedLink ? <Check size={12} className="text-emerald-600" /> : <Share2 size={12} />}
-                <span>{copiedLink ? 'Copied' : 'Share'}</span>
+                <span>{copiedLink ? 'Copied' : 'Share Map'}</span>
               </button>
             </div>
 
             <button
               onClick={handleClose}
-              className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg transition-colors cursor-pointer"
+              className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg transition-colors cursor-pointer"
             >
               Done & View on Map
             </button>
