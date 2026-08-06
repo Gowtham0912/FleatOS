@@ -70,6 +70,15 @@ def create_app() -> FastAPI:
         """Serve the phone GPS sender page at /gps"""
         return FileResponse(os.path.join(STATIC_DIR, "gps_sender.html"))
 
+    @app.get("/")
+    async def root():
+        return {
+            "message": "Fleet Tracking API is running! 🚀",
+            "docs": "/docs",
+            "health": "/health",
+            "gps_tracker": "/gps"
+        }
+
     @app.get("/health", tags=["Health"])
     async def health():
         return {"status": "ok"}
