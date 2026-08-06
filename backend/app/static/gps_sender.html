@@ -295,57 +295,78 @@
 
   // ── GPS + HTTP POST ────────────────────────────────────────────────────────
   function sendGPS() {
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude, accuracy } = pos.coords;
-        const timestamp = new Date().toISOString();
+    function handleSuccess(pos) {
+      const { latitude, longitude, accuracy } = pos.coords;
+      const timestamp = new Date().toISOString();
 
-        // Update UI
-        document.getElementById('coords').textContent =
-          `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
-        document.getElementById('accuracy').textContent =
-          `±${Math.round(accuracy)} m`;
-        const pct = Math.max(0, Math.min(100, 100 - (accuracy / 500) * 100));
-        document.getElementById('accuracyFill').style.width = pct + '%';
+      document.getElementById('coords').textContent =
+        `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+      document.getElementById('accuracy').textContent =
+        `±${Math.round(accuracy)} m`;
+      const pct = Math.max(0, Math.min(100, 100 - (accuracy / 500) * 100));
+      document.getElementById('accuracyFill').style.width = pct + '%';
 
-        setStatus('tracking', 'Live');
+      setStatus('tracking', 'Live');
 
-        // POST to backend
-        try {
-          const payload = { device_id: deviceId, latitude, longitude, timestamp };
-          if (pairingCode) payload.pairing_code = pairingCode;
+      const payload = { device_id: deviceId, latitude, longitude, timestamp };
+      if (pairingCode) payload.pairing_code = pairingCode;
 
-          const res = await fetch(`${BACKEND_URL}/location`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-
-          if (res.ok) {
-            pingCount++;
-            document.getElementById('pingCount').textContent = `${pingCount} pings`;
-            document.getElementById('lastPing').textContent =
-              new Date().toLocaleTimeString();
-            log('ok', `OK — ping #${pingCount} (±${Math.round(accuracy)}m)`);
-          } else {
-            log('err', `HTTP ${res.status} from backend`);
-          }
-        } catch (err) {
-          log('err', `Network error: ${err.message}`);
-          setStatus('error', 'Backend unreachable');
+      fetch(`${BACKEND_URL}/location`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(res => {
+        if (res.ok) {
+          pingCount++;
+          document.getElementById('pingCount').textContent = `${pingCount} pings`;
+          document.getElementById('lastPing').textContent =
+            new Date().toLocaleTimeString();
+          log('ok', `OK — ping #${pingCount} (±${Math.round(accuracy)}m)`);
+        } else {
+          log('err', `HTTP ${res.status} from backend`);
         }
-      },
-      (err) => {
-        const msgs = {
-          1: 'Permission denied — allow location in browser',
-          2: 'GPS unavailable — go outside',
-          3: 'GPS timeout — retrying…'
-        };
-        const msg = msgs[err.code] || 'GPS error';
-        setStatus('error', msg);
-        log('err', msg);
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      })
+      .catch(err => {
+        log('err', `Network error: ${err.message}`);
+        setStatus('error', 'Backend unreachable');
+      });
+    }
+
+    function handleError(err) {
+      if (err.code === 3 || err.code === 2) {
+        // High accuracy timed out — fallback to standard accuracy
+        navigator.geolocation.getCurrentPosition(
+          handleSuccess,
+          (err2) => {
+            const msgs = {
+              1: 'Permission denied — allow Location in phone browser settings',
+              2: 'GPS unavailable — turn ON Location/GPS on your phone',
+              3: 'GPS request timed out — retrying…'
+            };
+            const msg = msgs[err2.code] || 'GPS error';
+            setStatus('error', msg);
+            log('err', msg);
+          },
+          { enableHighAccuracy: false, timeout: 10000, maximumAge: 10000 }
+        );
+        return;
+      }
+
+      const msgs = {
+        1: 'Permission denied — allow Location in phone browser settings',
+        2: 'GPS unavailable — turn ON Location/GPS on your phone',
+        3: 'GPS request timed out — retrying…'
+      };
+      const msg = msgs[err.code] || 'GPS error';
+      setStatus('error', msg);
+      log('err', msg);
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      handleSuccess,
+      handleError,
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
     );
   }
 
