@@ -76,7 +76,7 @@ export default function Dashboard({ vehicles, locations, isLoading, lastMessage,
                 <p className="text-3xl mb-2">📱</p>
                 <p className="text-sm font-bold text-slate-900 mb-1">No devices active</p>
                 <p className="text-xs text-slate-500">
-                  Click <strong className="text-blue-600">Connect Phone</strong> above to start tracking.
+                  Click <strong className="text-blue-600">Connect GPS</strong> above to start tracking.
                 </p>
               </div>
             </div>

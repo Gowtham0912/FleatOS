@@ -17,7 +17,7 @@ const INTERPOLATION_DURATION_MS = 5000
 const FRAME_INTERVAL_MS = 16
 
 /**
- * vehicleIcon — returns a Leaflet divIcon for the vehicle dot.
+ * vehicleIcon — returns a high-precision Leaflet divIcon with a pulse ring.
  */
 const vehicleIcon = (isSelected) =>
   L.divIcon({
@@ -25,26 +25,35 @@ const vehicleIcon = (isSelected) =>
     html: `
       <div style="
         position: relative;
-        width: 32px;
-        height: 32px;
+        width: 36px;
+        height: 36px;
         display: flex;
         align-items: center;
         justify-content: center;
       ">
         <div style="
-          width: ${isSelected ? '24px' : '20px'};
-          height: ${isSelected ? '24px' : '20px'};
+          position: absolute;
+          width: ${isSelected ? '32px' : '26px'};
+          height: ${isSelected ? '32px' : '26px'};
+          border-radius: 50%;
+          background: ${isSelected ? 'rgba(37, 99, 235, 0.25)' : 'rgba(2, 132, 199, 0.2)'};
+          animation: pulse 2s infinite;
+        "></div>
+        <div style="
+          position: relative;
+          width: ${isSelected ? '22px' : '18px'};
+          height: ${isSelected ? '22px' : '18px'};
           border-radius: 50%;
           background: ${isSelected ? '#2563EB' : '#0284C7'};
-          border: 3px solid #FFFFFF;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-          transition: width 0.2s ease, height 0.2s ease, background 0.2s ease;
+          border: 2.5px solid #FFFFFF;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          transition: all 0.2s ease;
         "></div>
       </div>
     `,
-    iconSize: [32, 32],
-    iconAnchor: [16, 16],
-    popupAnchor: [0, -16],
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+    popupAnchor: [0, -18],
   })
 
 /**
@@ -55,12 +64,10 @@ function lerp(a, b, t) {
 }
 
 /**
- * Easing function — ease-in-out cubic for natural movement feel.
+ * Linear motion for natural, constant vehicle speed along roads.
  */
-function easeInOutCubic(t) {
-  return t < 0.5
-    ? 4 * t * t * t
-    : 1 - Math.pow(-2 * t + 2, 3) / 2
+function linearMotion(t) {
+  return t
 }
 
 /**
@@ -84,6 +91,8 @@ export default function AnimatedMarker({
   const prevLatLng = useRef(null)
   const targetLatLng = useRef(null)
   const animStartTime = useRef(null)
+  const lastPingTime = useRef(null)
+  const animDuration = useRef(2000)
 
   // Current interpolated position for display
   const currentPos = useRef(null)
@@ -96,6 +105,14 @@ export default function AnimatedMarker({
 
     const newLat = location.latitude
     const newLng = location.longitude
+    const now = performance.now()
+
+    // Measure time since last ping to adapt animation speed automatically
+    if (lastPingTime.current) {
+      const pingInterval = now - lastPingTime.current
+      animDuration.current = Math.min(Math.max(pingInterval, 1000), 4000)
+    }
+    lastPingTime.current = now
 
     // If this is the very first position, snap immediately
     if (!targetLatLng.current) {
@@ -128,14 +145,14 @@ export default function AnimatedMarker({
       ? { ...currentPos.current }
       : { ...targetLatLng.current }
     targetLatLng.current = { lat: newLat, lng: newLng }
-    animStartTime.current = performance.now()
+    animStartTime.current = now
   }, [location, vehicle.id, onInterpolatedPosition])
 
   // Main animation loop using requestAnimationFrame
   useEffect(() => {
     let running = true
     let lastCallbackTime = 0
-    const CALLBACK_THROTTLE_MS = 200 // update overlay coords ~5×/sec
+    const CALLBACK_THROTTLE_MS = 150 // update overlay coords ~6×/sec
 
     function animate(now) {
       if (!running) return
@@ -148,8 +165,9 @@ export default function AnimatedMarker({
         const startTime = animStartTime.current
         if (startTime !== null) {
           const elapsed = now - startTime
-          const rawT = Math.min(elapsed / INTERPOLATION_DURATION_MS, 1)
-          const t = easeInOutCubic(rawT)
+          const duration = animDuration.current || 2000
+          const rawT = Math.min(elapsed / duration, 1)
+          const t = linearMotion(rawT)
 
           const lat = lerp(from.lat, to.lat, t)
           const lng = lerp(from.lng, to.lng, t)

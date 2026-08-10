@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Wifi, WifiOff, Activity, Smartphone, X, QrCode, Copy, Check } from 'lucide-react'
+import { Wifi, WifiOff, Activity, Navigation, X, QrCode, Copy, Check } from 'lucide-react'
 import { format } from 'date-fns'
 import { useAuth } from '../context/AuthContext'
 
@@ -56,15 +56,15 @@ export default function TopBar({ title, isConnected, lastMessage }) {
             </div>
           )}
 
-          {/* Connect Phone button */}
+          {/* Connect GPS button */}
           <button
             id="connect-phone-btn"
             onClick={() => setShowQr(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold
                        bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm cursor-pointer"
           >
-            <Smartphone size={13} />
-            Connect Phone
+            <Navigation size={13} />
+            Connect GPS
           </button>
 
           {/* WS Status chip */}
@@ -103,7 +103,7 @@ export default function TopBar({ title, isConnected, lastMessage }) {
             {/* Header */}
             <div className="flex items-center gap-2 text-slate-900">
               <QrCode size={20} className="text-blue-600" />
-              <span className="text-sm font-bold tracking-tight">Connect Phone Tracker</span>
+              <span className="text-sm font-bold tracking-tight">Connect GPS Tracker</span>
             </div>
 
             {/* Account Code — prominent display */}

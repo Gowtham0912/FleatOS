@@ -365,16 +365,19 @@
 <script>
   // ── Config ─────────────────────────────────────────────────────────────────
   const BACKEND_URL  = window.location.origin;
-  const INTERVAL_MS  = 5000;
+  const INTERVAL_MS  = 2000; // High frequency — 2 seconds
   const POLL_MS      = 3000;
 
   // ── State ──────────────────────────────────────────────────────────────────
+  let watchId      = null;
   let intervalId   = null;
   let pollId       = null;
   let pingCount    = 0;
   let isTracking   = false;
   let isPaired     = false;
   let accountCode  = '';
+  let lastPos      = null;
+  let lastPostTime = 0;
 
   // ── Code & Device ID ───────────────────────────────────────────────────────
   const urlParams = new URLSearchParams(window.location.search);
@@ -573,111 +576,109 @@
     }
 
     isTracking = true;
-    setStatus('tracking', 'Acquiring GPS…');
+    setStatus('tracking', 'Acquiring high-precision GPS…');
     updateBtn();
 
-    // Send immediately, then every 5s
-    sendGPS();
-    intervalId = setInterval(sendGPS, INTERVAL_MS);
+    // Start watchPosition for continuous hardware GPS updates
+    watchId = navigator.geolocation.watchPosition(
+      handleLocationUpdate,
+      handleLocationError,
+      { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
+    );
+
+    // Also send periodic heartbeat every 2s
+    intervalId = setInterval(() => {
+      if (lastPos) postGPS(lastPos);
+    }, INTERVAL_MS);
   }
 
   function stopTracking() {
     isTracking = false;
-    clearInterval(intervalId);
-    intervalId = null;
+    if (watchId !== null) {
+      navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+    }
+    if (intervalId !== null) {
+      clearInterval(intervalId);
+      intervalId = null;
+    }
     setStatus('idle', 'Stopped');
     updateBtn();
     log('info', 'Tracking stopped.');
   }
 
+  // ── Handle GPS Hardware Update ─────────────────────────────────────────────
+  function handleLocationUpdate(pos) {
+    lastPos = pos;
+    const now = Date.now();
+    // Post immediately if 2s passed since last post
+    if (now - lastPostTime >= INTERVAL_MS) {
+      postGPS(pos);
+    }
+  }
+
+  function handleLocationError(err) {
+    const msgs = {
+      1: 'Permission denied — allow Location in phone browser settings',
+      2: 'GPS unavailable — turn ON Location/GPS on your phone',
+      3: 'GPS request timed out — retrying…'
+    };
+    const msg = msgs[err.code] || 'GPS error';
+    setStatus('error', msg);
+    log('err', msg);
+  }
+
   // ── GPS + HTTP POST ────────────────────────────────────────────────────────
-  function sendGPS() {
-    function handleSuccess(pos) {
-      const { latitude, longitude, accuracy } = pos.coords;
-      const timestamp = new Date().toISOString();
+  function postGPS(pos) {
+    lastPostTime = Date.now();
+    const { latitude, longitude, accuracy } = pos.coords;
+    const timestamp = new Date().toISOString();
 
-      document.getElementById('coords').textContent =
-        `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
-      document.getElementById('accuracy').textContent =
-        `±${Math.round(accuracy)} m`;
-      const pct = Math.max(0, Math.min(100, 100 - (accuracy / 500) * 100));
-      document.getElementById('accuracyFill').style.width = pct + '%';
+    document.getElementById('coords').textContent =
+      `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+    document.getElementById('accuracy').textContent =
+      `±${Math.round(accuracy)} m`;
+    const pct = Math.max(0, Math.min(100, 100 - (accuracy / 500) * 100));
+    document.getElementById('accuracyFill').style.width = pct + '%';
 
-      setStatus('tracking', 'Live');
+    setStatus('tracking', 'Live Streaming');
 
-      const payload = { device_id: deviceId, latitude, longitude, timestamp };
-      if (accountCode) payload.account_code = accountCode;
+    const payload = { device_id: deviceId, latitude, longitude, timestamp };
+    if (accountCode) payload.account_code = accountCode;
 
-      fetch(`${BACKEND_URL}/location`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-      .then(res => {
-        if (res.ok) {
-          pingCount++;
-          document.getElementById('pingCount').textContent = `${pingCount} pings`;
-          document.getElementById('lastPing').textContent =
-            new Date().toLocaleTimeString();
-          log('ok', `OK — ping #${pingCount} (±${Math.round(accuracy)}m)`);
-        } else if (res.status === 403) {
-          res.json().then(data => {
-            log('err', data.detail || 'Device not approved or vehicle deleted');
-            setStatus('error', 'Unapproved');
-            stopTracking();
-            stopPolling();
-            resetToCodeEntry();
-          }).catch(() => {
-            log('err', 'HTTP 403 — device not approved');
-            stopTracking();
-            stopPolling();
-            resetToCodeEntry();
-          });
-        } else {
-          log('err', `HTTP ${res.status} from backend`);
-        }
-      })
-      .catch(err => {
-        log('err', `Network error: ${err.message}`);
-        setStatus('error', 'Backend unreachable');
-      });
-    }
-
-    function handleError(err) {
-      if (err.code === 3 || err.code === 2) {
-        // High accuracy timed out — fallback to standard accuracy
-        navigator.geolocation.getCurrentPosition(
-          handleSuccess,
-          (err2) => {
-            const msgs = {
-              1: 'Permission denied — allow Location in phone browser settings',
-              2: 'GPS unavailable — turn ON Location/GPS on your phone',
-              3: 'GPS request timed out — retrying…'
-            };
-            const msg = msgs[err2.code] || 'GPS error';
-            setStatus('error', msg);
-            log('err', msg);
-          },
-          { enableHighAccuracy: false, timeout: 10000, maximumAge: 10000 }
-        );
-        return;
+    fetch(`${BACKEND_URL}/location`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(res => {
+      if (res.ok) {
+        pingCount++;
+        document.getElementById('pingCount').textContent = `${pingCount} pings`;
+        document.getElementById('lastPing').textContent =
+          new Date().toLocaleTimeString();
+        log('ok', `OK — ping #${pingCount} (±${Math.round(accuracy)}m)`);
+      } else if (res.status === 403) {
+        res.json().then(data => {
+          log('err', data.detail || 'Device not approved or vehicle deleted');
+          setStatus('error', 'Unapproved');
+          stopTracking();
+          stopPolling();
+          resetToCodeEntry();
+        }).catch(() => {
+          log('err', 'HTTP 403 — device not approved');
+          stopTracking();
+          stopPolling();
+          resetToCodeEntry();
+        });
+      } else {
+        log('err', `HTTP ${res.status} from backend`);
       }
-
-      const msgs = {
-        1: 'Permission denied — allow Location in phone browser settings',
-        2: 'GPS unavailable — turn ON Location/GPS on your phone',
-        3: 'GPS request timed out — retrying…'
-      };
-      const msg = msgs[err.code] || 'GPS error';
-      setStatus('error', msg);
-      log('err', msg);
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      handleSuccess,
-      handleError,
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
-    );
+    })
+    .catch(err => {
+      log('err', `Network error: ${err.message}`);
+      setStatus('error', 'Backend unreachable');
+    });
   }
 
   // ── UI helpers ─────────────────────────────────────────────────────────────
