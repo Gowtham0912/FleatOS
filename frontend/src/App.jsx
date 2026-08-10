@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import Dashboard from './pages/Dashboard'
 import Vehicles from './pages/Vehicles'
+import PairingRequests from './pages/PairingRequests'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import ShareView from './pages/ShareView'
@@ -67,6 +68,16 @@ export default function App() {
                     />
                   }
                 />
+                <Route
+                  path="/requests"
+                  element={
+                    <PairingRequests
+                      isConnected={isConnected}
+                      lastMessage={lastMessage}
+                      onRefresh={refresh}
+                    />
+                  }
+                />
               </Routes>
             </main>
           </div>
@@ -75,3 +86,4 @@ export default function App() {
     </Routes>
   )
 }
+

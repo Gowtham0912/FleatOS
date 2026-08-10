@@ -1,12 +1,11 @@
 import { useState } from 'react'
-import { Wifi, WifiOff, Activity, Smartphone, X, QrCode, Plus } from 'lucide-react'
+import { Wifi, WifiOff, Activity, Smartphone, X, QrCode, Plus, Copy, Check } from 'lucide-react'
 import { format } from 'date-fns'
 import AddVehicleModal from './AddVehicleModal'
 import { useAuth } from '../context/AuthContext'
 
 // The backend host — live Render public backend
 const BACKEND_HOST = 'https://fleet-backend-5i1b.onrender.com'
-const GPS_URL = `${BACKEND_HOST}/gps`
 
 /**
  * TopBar — shows page title, last update time, WS connection status,
@@ -15,13 +14,28 @@ const GPS_URL = `${BACKEND_HOST}/gps`
 export default function TopBar({ title, isConnected, lastMessage, onVehicleAdded }) {
   const [showQr, setShowQr] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [copiedCode, setCopiedCode] = useState(false)
   const { user } = useAuth()
 
   const lastTime = lastMessage?.timestamp
     ? format(new Date(lastMessage.timestamp), 'HH:mm:ss')
     : null
 
+  // Build the GPS URL with the user's account code
+  const accountCode = user?.account_code || ''
+  const GPS_URL = accountCode
+    ? `${BACKEND_HOST}/gps?code=${accountCode}`
+    : `${BACKEND_HOST}/gps`
+
   const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(GPS_URL)}&bgcolor=ffffff&color=0f172a&margin=10`
+
+  const copyCode = () => {
+    if (accountCode) {
+      navigator.clipboard.writeText(accountCode)
+      setCopiedCode(true)
+      setTimeout(() => setCopiedCode(false), 2000)
+    }
+  }
 
   return (
     <>
@@ -88,7 +102,7 @@ export default function TopBar({ title, isConnected, lastMessage, onVehicleAdded
         onVehicleAdded={onVehicleAdded}
       />
 
-      {/* ── QR Modal ──────────────────────────────────────────────────── */}
+      {/* ── QR / Account Code Modal ──────────────────────────────────────── */}
       {showQr && (
         <div
           id="qr-modal-backdrop"
@@ -112,6 +126,25 @@ export default function TopBar({ title, isConnected, lastMessage, onVehicleAdded
               <QrCode size={20} className="text-blue-600" />
               <span className="text-sm font-bold tracking-tight">Connect Phone Tracker</span>
             </div>
+
+            {/* Account Code — prominent display */}
+            {accountCode && (
+              <div className="w-full bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
+                <p className="text-[10px] text-blue-500 font-bold uppercase tracking-wider mb-1">Your Account Code</p>
+                <div className="flex items-center justify-center gap-2">
+                  <p className="text-2xl font-bold font-mono text-blue-700 tracking-widest">{accountCode}</p>
+                  <button
+                    onClick={copyCode}
+                    className="p-1.5 rounded-lg bg-white border border-blue-200 text-blue-600 hover:bg-blue-100
+                               transition-colors cursor-pointer"
+                    title="Copy code"
+                  >
+                    {copiedCode ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+                  </button>
+                </div>
+                <p className="text-[10px] text-blue-400 mt-1.5">Share this code or scan QR below</p>
+              </div>
+            )}
 
             {/* QR Code */}
             <div
@@ -149,7 +182,8 @@ export default function TopBar({ title, isConnected, lastMessage, onVehicleAdded
             <ol className="text-xs text-slate-600 space-y-1.5 self-start w-full border-t border-slate-100 pt-3">
               <li><strong className="text-slate-900">1.</strong> Scan QR code with your phone camera</li>
               <li><strong className="text-slate-900">2.</strong> Tap <strong className="text-slate-900">Start Tracking</strong> and grant location permission</li>
-              <li><strong className="text-slate-900">3.</strong> Device will appear on dashboard map!</li>
+              <li><strong className="text-slate-900">3.</strong> Approve the device request on your dashboard</li>
+              <li><strong className="text-slate-900">4.</strong> Device will appear on your map! 🗺️</li>
             </ol>
           </div>
         </div>
@@ -157,3 +191,4 @@ export default function TopBar({ title, isConnected, lastMessage, onVehicleAdded
     </>
   )
 }
+

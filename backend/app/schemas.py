@@ -27,6 +27,7 @@ class UserResponse(BaseModel):
     email: str
     full_name: str
     created_at: datetime
+    account_code: str
 
     model_config = {"from_attributes": True}
 
@@ -47,6 +48,7 @@ class LocationCreate(BaseModel):
     latitude: float = Field(..., ge=-90.0, le=90.0, description="GPS latitude")
     longitude: float = Field(..., ge=-180.0, le=180.0, description="GPS longitude")
     pairing_code: str | None = Field(default=None, description="Optional private pairing code (TRK-XXXX)")
+    account_code: str | None = Field(default=None, description="Optional account code (FLT-XXXXXX) for new pairing flow")
     timestamp: datetime | None = Field(
         default=None,
         description="Device timestamp (UTC). Server time used if omitted.",
@@ -97,6 +99,53 @@ class VehicleDetail(VehicleResponse):
     latest_location: LocationResponse | None = None
 
 
+# ── Pairing Request schemas ─────────────────────────────────────────────────
+
+class PairingRequestCreate(BaseModel):
+    """Payload from GPS sender to request pairing with an account."""
+    account_code: str = Field(..., min_length=1, description="The 6-digit account code (FLT-XXXXXX)")
+    device_id: str = Field(..., min_length=1, max_length=64, description="Phone's unique device ID")
+
+    @field_validator("account_code")
+    @classmethod
+    def normalize_account_code(cls, v: str) -> str:
+        return v.strip().upper()
+
+    @field_validator("device_id")
+    @classmethod
+    def strip_device(cls, v: str) -> str:
+        return v.strip()
+
+
+class PairingRequestResponse(BaseModel):
+    """Pairing request info returned to client."""
+    id: int
+    user_id: int
+    device_id: str
+    status: str
+    vehicle_id: int | None = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class PairingApprovePayload(BaseModel):
+    """Payload to approve a pairing request with a vehicle name."""
+    vehicle_name: str = Field(
+        default="My Vehicle",
+        min_length=1,
+        max_length=128,
+        description="Name for the new vehicle",
+    )
+
+
+class PairingCheckResponse(BaseModel):
+    """Response for GPS sender polling to check pairing status."""
+    status: str  # pending / approved / rejected
+    vehicle_name: str | None = None
+    message: str
+
+
 # ── WebSocket broadcast payload ─────────────────────────────────────────────
 
 class LocationBroadcast(BaseModel):
@@ -111,4 +160,5 @@ class LocationBroadcast(BaseModel):
     timestamp: datetime
     pairing_code: str | None = None
     share_code: str | None = None
+
 

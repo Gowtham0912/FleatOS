@@ -18,7 +18,7 @@ from fastapi.responses import FileResponse
 
 from app.config import settings
 from app.database import init_db
-from app.routes import auth, location, vehicles, websocket
+from app.routes import auth, location, vehicles, websocket, pairing
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 
@@ -64,6 +64,7 @@ def create_app() -> FastAPI:
     app.include_router(auth.router)
     app.include_router(location.router)
     app.include_router(vehicles.router)
+    app.include_router(pairing.router)
     app.include_router(websocket.router)
 
     @app.get("/gps", include_in_schema=False)

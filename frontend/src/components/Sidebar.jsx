@@ -1,16 +1,36 @@
+import { useState, useEffect } from 'react'
 import { NavLink, Link } from 'react-router-dom'
-import { LayoutDashboard, Truck, Navigation, Wifi, WifiOff, LogOut, User as UserIcon } from 'lucide-react'
+import { LayoutDashboard, Truck, Navigation, Wifi, WifiOff, LogOut, User as UserIcon, Shield } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { fetchPairingRequests } from '../api/fleetApi'
 
 /**
  * Sidebar — simple clean left navigation panel with user profile.
  */
 export default function Sidebar({ isConnected, vehicleCount }) {
   const { user, logout } = useAuth()
+  const [pendingCount, setPendingCount] = useState(0)
+
+  // Poll for pending pairing requests
+  useEffect(() => {
+    if (!user) { setPendingCount(0); return }
+
+    const load = async () => {
+      try {
+        const requests = await fetchPairingRequests('pending')
+        setPendingCount(requests.length)
+      } catch { /* ignore */ }
+    }
+
+    load()
+    const interval = setInterval(load, 10000)
+    return () => clearInterval(interval)
+  }, [user])
 
   const navItems = [
-    { to: '/',         icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/vehicles', icon: Truck,           label: 'Vehicles'  },
+    { to: '/',           icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/vehicles',   icon: Truck,           label: 'Vehicles'  },
+    { to: '/requests',   icon: Shield,          label: 'Requests', badge: pendingCount },
   ]
 
   return (
@@ -29,7 +49,7 @@ export default function Sidebar({ isConnected, vehicleCount }) {
 
       {/* ── Nav items ────────────────────────────────────────────────────── */}
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {navItems.map(({ to, icon: Icon, label }) => (
+        {navItems.map(({ to, icon: Icon, label, badge }) => (
           <NavLink
             key={to}
             to={to}
@@ -43,7 +63,13 @@ export default function Sidebar({ isConnected, vehicleCount }) {
             }
           >
             <Icon size={18} />
-            {label}
+            <span className="flex-1">{label}</span>
+            {badge > 0 && (
+              <span className="min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full
+                             bg-amber-500 text-white text-[10px] font-bold animate-pulse">
+                {badge}
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>
@@ -101,3 +127,4 @@ export default function Sidebar({ isConnected, vehicleCount }) {
     </aside>
   )
 }
+

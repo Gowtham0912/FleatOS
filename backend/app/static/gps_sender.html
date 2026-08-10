@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <title>Fleet Tracker — GPS Sender</title>
+  <title>FleetOS — GPS Sender</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -97,6 +97,7 @@
     .badge.idle     { background: #F1F5F9; border: 1px solid #E2E8F0; color: #64748B; }
     .badge.tracking { background: #ECFDF5; border: 1px solid #A7F3D0; color: #059669; }
     .badge.error    { background: #FEF2F2; border: 1px solid #FECACA; color: #DC2626; }
+    .badge.pending  { background: #FFFBEB; border: 1px solid #FDE68A; color: #D97706; }
 
     .dot {
       width: 7px; height: 7px;
@@ -106,6 +107,12 @@
     .dot.idle     { background: #94A3B8; }
     .dot.tracking { background: #10B981; }
     .dot.error    { background: #EF4444; }
+    .dot.pending  { background: #F59E0B; animation: pulse-dot 1.5s ease-in-out infinite; }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
 
     .btn {
       width: 100%;
@@ -150,6 +157,7 @@
     .log-box .ok   { color: #059669; }
     .log-box .err  { color: #DC2626; }
     .log-box .info { color: #64748B; }
+    .log-box .warn { color: #D97706; }
 
     .accuracy-bar {
       height: 4px;
@@ -165,6 +173,92 @@
       background: #2563EB;
       transition: width 0.5s;
     }
+
+    /* Code input */
+    .code-input-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .code-input {
+      flex: 1;
+      background: #F8FAFC;
+      border: 2px solid #E2E8F0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: 'Courier New', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #0F172A;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .code-input:focus { border-color: #2563EB; background: #FFFFFF; }
+    .code-input::placeholder { color: #CBD5E1; text-transform: none; letter-spacing: 0; font-weight: 400; }
+
+    .code-submit {
+      padding: 12px 18px;
+      background: #2563EB;
+      color: #FFFFFF;
+      border: none;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+
+    .code-submit:hover { background: #1D4ED8; }
+    .code-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Waiting card */
+    .waiting-card {
+      background: #FFFBEB;
+      border: 1px solid #FDE68A;
+      border-radius: 14px;
+      padding: 20px;
+      width: 100%;
+      max-width: 360px;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+
+    .waiting-card .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid #FDE68A;
+      border-top: 3px solid #D97706;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 12px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .waiting-card p { font-size: 13px; color: #92400E; font-weight: 600; }
+    .waiting-card .sub { font-size: 11px; color: #B45309; font-weight: 400; margin-top: 4px; }
+
+    /* Rejected card */
+    .rejected-card {
+      background: #FEF2F2;
+      border: 1px solid #FECACA;
+      border-radius: 14px;
+      padding: 20px;
+      width: 100%;
+      max-width: 360px;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+
+    .rejected-card p { font-size: 13px; color: #991B1B; font-weight: 600; }
+    .rejected-card .sub { font-size: 11px; color: #DC2626; font-weight: 400; margin-top: 4px; }
+
+    .hidden { display: none; }
   </style>
 </head>
 <body>
@@ -178,8 +272,48 @@
     </div>
   </div>
 
-  <!-- Device card -->
-  <div class="card">
+  <!-- Step 1: Account Code Entry -->
+  <div class="card" id="codeCard">
+    <div class="label">ACCOUNT CODE</div>
+    <p style="font-size:12px; color:#64748B; margin-bottom:8px;">
+      Enter the 6-digit code from your Fleet dashboard to pair this device.
+    </p>
+    <div class="code-input-group">
+      <input
+        type="text"
+        id="codeInput"
+        class="code-input"
+        placeholder="FLT-XXXXXX"
+        maxlength="10"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <button class="code-submit" id="codeSubmitBtn" onclick="submitCode()">Pair</button>
+    </div>
+    <div id="codeError" style="color:#DC2626; font-size:11px; margin-top:8px; display:none;"></div>
+  </div>
+
+  <!-- Waiting for approval -->
+  <div class="waiting-card hidden" id="waitingCard">
+    <div class="spinner"></div>
+    <p>Waiting for approval…</p>
+    <p class="sub">The account owner needs to approve this device on their dashboard.</p>
+    <p class="sub" style="margin-top:8px; font-size:10px; color:#92400E;">
+      Device ID: <span id="waitingDeviceId" style="font-family:monospace;"></span>
+    </p>
+  </div>
+
+  <!-- Rejected -->
+  <div class="rejected-card hidden" id="rejectedCard">
+    <p>❌ Request Rejected</p>
+    <p class="sub">The account owner rejected your pairing request.</p>
+    <button class="btn start" style="margin-top:14px; height:42px; font-size:13px;" onclick="resetToCodeEntry()">
+      Try Again
+    </button>
+  </div>
+
+  <!-- Device card (shown after approval) -->
+  <div class="card hidden" id="deviceCard">
     <div class="label">DEVICE ID</div>
     <div class="value small" id="deviceId">Loading…</div>
 
@@ -195,8 +329,8 @@
     </div>
   </div>
 
-  <!-- Location card -->
-  <div class="card">
+  <!-- Location card (shown after approval) -->
+  <div class="card hidden" id="locationCard">
     <div class="label">COORDINATES</div>
     <div class="value" id="coords">—</div>
 
@@ -219,36 +353,42 @@
     </div>
   </div>
 
-  <!-- Toggle button -->
-  <button class="btn start" id="toggleBtn" onclick="toggle()">
+  <!-- Toggle button (shown after approval) -->
+  <button class="btn start hidden" id="toggleBtn" onclick="toggle()">
     Start Sharing Location
   </button>
 
-  <div class="ping-count">
+  <div class="ping-count hidden" id="pingInfo">
     Sends GPS to backend every <span>5 seconds</span>
   </div>
 
 <script>
   // ── Config ─────────────────────────────────────────────────────────────────
-  // Backend URL — uses current server domain automatically
   const BACKEND_URL  = window.location.origin;
   const INTERVAL_MS  = 5000;
+  const POLL_MS      = 3000;
 
   // ── State ──────────────────────────────────────────────────────────────────
-  let intervalId  = null;
-  let pingCount   = 0;
-  let isTracking  = false;
+  let intervalId   = null;
+  let pollId       = null;
+  let pingCount    = 0;
+  let isTracking   = false;
+  let isPaired     = false;
+  let accountCode  = '';
+
   // ── Code & Device ID ───────────────────────────────────────────────────────
-  const urlParams   = new URLSearchParams(window.location.search);
-  let pairingCode = urlParams.get('code') || localStorage.getItem('fleet_pairing_code') || '';
+  const urlParams = new URLSearchParams(window.location.search);
+  let savedCode = urlParams.get('code') || localStorage.getItem('fleet_account_code') || '';
   if (urlParams.get('code')) {
-    localStorage.setItem('fleet_pairing_code', urlParams.get('code'));
+    localStorage.setItem('fleet_account_code', urlParams.get('code'));
   }
 
   let deviceId = getDeviceId();
-  document.getElementById('deviceId').textContent = pairingCode
-    ? `${deviceId} (Code: ${pairingCode})`
-    : deviceId;
+
+  // Pre-fill code input
+  if (savedCode) {
+    document.getElementById('codeInput').value = savedCode;
+  }
 
   function getDeviceId() {
     let id = localStorage.getItem('fleet_device_id');
@@ -258,6 +398,158 @@
       localStorage.setItem('fleet_device_id', id);
     }
     return id;
+  }
+
+  // ── Auto-submit if code in URL ─────────────────────────────────────────────
+  if (savedCode) {
+    submitCode();
+  }
+
+  // ── Code submission ────────────────────────────────────────────────────────
+  async function submitCode() {
+    const input = document.getElementById('codeInput');
+    const code = input.value.trim().toUpperCase();
+    const errEl = document.getElementById('codeError');
+
+    if (!code) {
+      errEl.textContent = 'Please enter an account code.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    accountCode = code;
+    localStorage.setItem('fleet_account_code', code);
+    errEl.style.display = 'none';
+
+    // Disable button during request
+    const btn = document.getElementById('codeSubmitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Pairing…';
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/pairing/request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ account_code: code, device_id: deviceId })
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        errEl.textContent = err.detail || `Error: HTTP ${res.status}`;
+        errEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Pair';
+        return;
+      }
+
+      const data = await res.json();
+
+      if (data.status === 'approved') {
+        // Already approved — go straight to tracking
+        onApproved();
+      } else if (data.status === 'pending') {
+        // Show waiting state
+        showWaiting();
+        startPolling();
+      } else if (data.status === 'rejected') {
+        showRejected();
+      }
+
+    } catch (err) {
+      errEl.textContent = `Network error: ${err.message}`;
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Pair';
+    }
+  }
+
+  // ── Polling for approval ───────────────────────────────────────────────────
+  function startPolling() {
+    if (pollId) clearInterval(pollId);
+    pollId = setInterval(checkPairingStatus, POLL_MS);
+  }
+
+  function stopPolling() {
+    if (pollId) {
+      clearInterval(pollId);
+      pollId = null;
+    }
+  }
+
+  async function checkPairingStatus() {
+    try {
+      const res = await fetch(`${BACKEND_URL}/pairing/check/${deviceId}`);
+      if (!res.ok) return;
+
+      const data = await res.json();
+
+      if (data.status === 'approved') {
+        stopPolling();
+        onApproved(data.vehicle_name);
+      } else if (data.status === 'rejected') {
+        stopPolling();
+        showRejected();
+      }
+      // If still pending, keep polling
+    } catch {
+      // Network error, keep polling
+    }
+  }
+
+  // ── State transitions ─────────────────────────────────────────────────────
+  function showWaiting() {
+    document.getElementById('codeCard').classList.add('hidden');
+    document.getElementById('waitingCard').classList.remove('hidden');
+    document.getElementById('waitingDeviceId').textContent = deviceId;
+    document.getElementById('rejectedCard').classList.add('hidden');
+  }
+
+  function showRejected() {
+    document.getElementById('codeCard').classList.add('hidden');
+    document.getElementById('waitingCard').classList.add('hidden');
+    document.getElementById('rejectedCard').classList.remove('hidden');
+    document.getElementById('deviceCard').classList.add('hidden');
+    document.getElementById('locationCard').classList.add('hidden');
+    document.getElementById('toggleBtn').classList.add('hidden');
+    document.getElementById('pingInfo').classList.add('hidden');
+  }
+
+  function resetToCodeEntry() {
+    localStorage.removeItem('fleet_account_code');
+    document.getElementById('codeCard').classList.remove('hidden');
+    document.getElementById('waitingCard').classList.add('hidden');
+    document.getElementById('rejectedCard').classList.add('hidden');
+    document.getElementById('deviceCard').classList.add('hidden');
+    document.getElementById('locationCard').classList.add('hidden');
+    document.getElementById('toggleBtn').classList.add('hidden');
+    document.getElementById('pingInfo').classList.add('hidden');
+    document.getElementById('codeInput').value = '';
+    document.getElementById('codeSubmitBtn').disabled = false;
+    document.getElementById('codeSubmitBtn').textContent = 'Pair';
+    isPaired = false;
+  }
+
+  function onApproved(vehicleName) {
+    isPaired = true;
+    // Hide code entry and waiting
+    document.getElementById('codeCard').classList.add('hidden');
+    document.getElementById('waitingCard').classList.add('hidden');
+    document.getElementById('rejectedCard').classList.add('hidden');
+
+    // Show tracking UI
+    document.getElementById('deviceCard').classList.remove('hidden');
+    document.getElementById('locationCard').classList.remove('hidden');
+    document.getElementById('toggleBtn').classList.remove('hidden');
+    document.getElementById('pingInfo').classList.remove('hidden');
+
+    // Set device ID display
+    const nameStr = vehicleName ? ` (${vehicleName})` : '';
+    document.getElementById('deviceId').textContent = `${deviceId}${nameStr}`;
+
+    log('ok', `✅ Device approved!${vehicleName ? ' Vehicle: ' + vehicleName : ''}`);
+
+    // Auto-start tracking
+    startTracking();
   }
 
   // ── Toggle ─────────────────────────────────────────────────────────────────
@@ -279,7 +571,7 @@
     setStatus('tracking', 'Acquiring GPS…');
     updateBtn();
 
-    // Send immediately, then every 5 s
+    // Send immediately, then every 5s
     sendGPS();
     intervalId = setInterval(sendGPS, INTERVAL_MS);
   }
@@ -309,7 +601,7 @@
       setStatus('tracking', 'Live');
 
       const payload = { device_id: deviceId, latitude, longitude, timestamp };
-      if (pairingCode) payload.pairing_code = pairingCode;
+      if (accountCode) payload.account_code = accountCode;
 
       fetch(`${BACKEND_URL}/location`, {
         method: 'POST',
@@ -323,6 +615,11 @@
           document.getElementById('lastPing').textContent =
             new Date().toLocaleTimeString();
           log('ok', `OK — ping #${pingCount} (±${Math.round(accuracy)}m)`);
+        } else if (res.status === 403) {
+          res.json().then(data => {
+            log('err', data.detail || 'Device not approved');
+            setStatus('error', 'Not approved');
+          }).catch(() => log('err', 'HTTP 403 — device not approved'));
         } else {
           log('err', `HTTP ${res.status} from backend`);
         }

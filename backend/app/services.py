@@ -3,12 +3,17 @@ Service layer — all business logic lives here, routes stay thin.
 """
 
 from datetime import datetime, timezone
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Vehicle, Location, generate_pairing_code, generate_share_code
+from app.models import (
+    Vehicle, Location, User, PairingRequest,
+    generate_pairing_code, generate_share_code,
+)
 from app.schemas import LocationCreate, VehicleCreate
 
+
+# ── Vehicle services ────────────────────────────────────────────────────────
 
 async def get_or_create_vehicle(
     db: AsyncSession, device_id: str, pairing_code: str | None = None
@@ -51,14 +56,60 @@ async def get_or_create_vehicle(
     return vehicle
 
 
+async def get_vehicle_for_approved_device(
+    db: AsyncSession, device_id: str
+) -> Vehicle | None:
+    """
+    Return the vehicle linked to this device_id ONLY if the device
+    has been approved via the pairing request flow.
+    Falls back to direct vehicle lookup for legacy paired devices.
+    """
+    # First check: does a vehicle with this device_id already exist?
+    result = await db.execute(
+        select(Vehicle).where(Vehicle.device_id == device_id)
+    )
+    vehicle = result.scalar_one_or_none()
+    if vehicle and vehicle.user_id is not None:
+        # Vehicle exists and is linked to a user — approved
+        return vehicle
+
+    # Check if there's an approved pairing request for this device
+    result = await db.execute(
+        select(PairingRequest).where(
+            PairingRequest.device_id == device_id,
+            PairingRequest.status == "approved",
+        ).order_by(desc(PairingRequest.created_at)).limit(1)
+    )
+    req = result.scalar_one_or_none()
+    if req and req.vehicle_id:
+        # Fetch the linked vehicle
+        result = await db.execute(
+            select(Vehicle).where(Vehicle.id == req.vehicle_id)
+        )
+        return result.scalar_one_or_none()
+
+    return None
+
+
 async def record_location(
     db: AsyncSession, payload: LocationCreate
 ) -> tuple[Vehicle, Location]:
     """
-    Upsert the vehicle and insert a new location record.
-    Returns (vehicle, location) so the route can broadcast immediately.
+    Record a GPS ping. Only works for approved/linked devices.
+    Raises ValueError if the device is not approved.
     """
-    vehicle = await get_or_create_vehicle(db, payload.device_id, payload.pairing_code)
+    # Try the new approval-based flow first
+    vehicle = await get_vehicle_for_approved_device(db, payload.device_id)
+
+    if vehicle is None and payload.pairing_code:
+        # Legacy flow: try pairing_code-based lookup
+        vehicle = await get_or_create_vehicle(db, payload.device_id, payload.pairing_code)
+
+    if vehicle is None:
+        raise ValueError(
+            "Device not approved. Please enter your account code on the GPS sender "
+            "page and wait for the account owner to approve your device."
+        )
 
     ts = payload.timestamp or datetime.now(timezone.utc)
 
@@ -104,8 +155,6 @@ async def create_user_vehicle(
     return vehicle
 
 
-from sqlalchemy import func
-
 async def get_vehicle_by_share_code(
     db: AsyncSession, share_code: str
 ) -> Vehicle | None:
@@ -149,4 +198,188 @@ async def get_location_history(
         .limit(limit)
     )
     return list(result.scalars().all())
+
+
+# ── Pairing Request services ───────────────────────────────────────────────
+
+async def find_user_by_account_code(
+    db: AsyncSession, account_code: str
+) -> User | None:
+    """Find a user by their account code."""
+    code = account_code.strip().upper()
+    result = await db.execute(
+        select(User).where(func.upper(User.account_code) == code)
+    )
+    return result.scalar_one_or_none()
+
+
+async def create_pairing_request(
+    db: AsyncSession, user_id: int, device_id: str
+) -> PairingRequest:
+    """
+    Create a new pairing request or return existing pending one.
+    If a previous request was rejected, allow re-requesting.
+    """
+    # Check for existing pending request from this device to this user
+    result = await db.execute(
+        select(PairingRequest).where(
+            PairingRequest.user_id == user_id,
+            PairingRequest.device_id == device_id,
+            PairingRequest.status == "pending",
+        )
+    )
+    existing = result.scalar_one_or_none()
+    if existing:
+        return existing
+
+    # Check if already approved
+    result = await db.execute(
+        select(PairingRequest).where(
+            PairingRequest.user_id == user_id,
+            PairingRequest.device_id == device_id,
+            PairingRequest.status == "approved",
+        )
+    )
+    approved = result.scalar_one_or_none()
+    if approved:
+        return approved
+
+    # Create new request
+    req = PairingRequest(
+        user_id=user_id,
+        device_id=device_id,
+        status="pending",
+    )
+    db.add(req)
+    await db.commit()
+    await db.refresh(req)
+    return req
+
+
+async def list_pairing_requests(
+    db: AsyncSession, user_id: int, status_filter: str | None = None
+) -> list[PairingRequest]:
+    """List pairing requests for a user, optionally filtered by status."""
+    stmt = select(PairingRequest).where(PairingRequest.user_id == user_id)
+    if status_filter:
+        stmt = stmt.where(PairingRequest.status == status_filter)
+    stmt = stmt.order_by(desc(PairingRequest.created_at))
+    result = await db.execute(stmt)
+    return list(result.scalars().all())
+
+
+async def approve_pairing_request(
+    db: AsyncSession, request_id: int, user_id: int, vehicle_name: str
+) -> PairingRequest:
+    """
+    Approve a pairing request: create a vehicle linked to the user,
+    bind the device_id, and mark the request as approved.
+    """
+    result = await db.execute(
+        select(PairingRequest).where(
+            PairingRequest.id == request_id,
+            PairingRequest.user_id == user_id,
+        )
+    )
+    req = result.scalar_one_or_none()
+    if not req:
+        raise ValueError("Pairing request not found.")
+    if req.status != "pending":
+        raise ValueError(f"Request already {req.status}.")
+
+    # Create a new vehicle for this device, linked to the user
+    vehicle = Vehicle(
+        device_id=req.device_id,
+        name=vehicle_name.strip(),
+        user_id=user_id,
+        pairing_code=generate_pairing_code(),
+        share_code=generate_share_code(),
+    )
+    db.add(vehicle)
+    await db.flush()
+
+    # Update the request
+    req.status = "approved"
+    req.vehicle_id = vehicle.id
+    await db.commit()
+    await db.refresh(req)
+    return req
+
+
+async def reject_pairing_request(
+    db: AsyncSession, request_id: int, user_id: int
+) -> PairingRequest:
+    """Reject a pairing request."""
+    result = await db.execute(
+        select(PairingRequest).where(
+            PairingRequest.id == request_id,
+            PairingRequest.user_id == user_id,
+        )
+    )
+    req = result.scalar_one_or_none()
+    if not req:
+        raise ValueError("Pairing request not found.")
+    if req.status != "pending":
+        raise ValueError(f"Request already {req.status}.")
+
+    req.status = "rejected"
+    await db.commit()
+    await db.refresh(req)
+    return req
+
+
+async def check_device_pairing_status(
+    db: AsyncSession, device_id: str
+) -> dict:
+    """
+    Check the pairing status of a device.
+    Returns status info for the GPS sender to poll.
+    """
+    # Find the most recent request for this device
+    result = await db.execute(
+        select(PairingRequest).where(
+            PairingRequest.device_id == device_id,
+        ).order_by(desc(PairingRequest.created_at)).limit(1)
+    )
+    req = result.scalar_one_or_none()
+
+    if not req:
+        return {
+            "status": "none",
+            "vehicle_name": None,
+            "message": "No pairing request found. Enter an account code to request pairing.",
+        }
+
+    if req.status == "pending":
+        return {
+            "status": "pending",
+            "vehicle_name": None,
+            "message": "Waiting for account owner to approve your device…",
+        }
+
+    if req.status == "approved" and req.vehicle_id:
+        # Get vehicle name
+        v_result = await db.execute(
+            select(Vehicle).where(Vehicle.id == req.vehicle_id)
+        )
+        vehicle = v_result.scalar_one_or_none()
+        return {
+            "status": "approved",
+            "vehicle_name": vehicle.name if vehicle else None,
+            "message": "Device approved! GPS tracking is active.",
+        }
+
+    if req.status == "rejected":
+        return {
+            "status": "rejected",
+            "vehicle_name": None,
+            "message": "Your pairing request was rejected by the account owner.",
+        }
+
+    return {
+        "status": req.status,
+        "vehicle_name": None,
+        "message": f"Status: {req.status}",
+    }
+
 

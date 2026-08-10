@@ -1,5 +1,5 @@
 """
-ORM models — User, Vehicle, and Location tables.
+ORM models — User, Vehicle, Location, and PairingRequest tables.
 """
 
 import uuid
@@ -22,6 +22,11 @@ def generate_share_code() -> str:
     return f"SHR-{uuid.uuid4().hex[:6].upper()}"
 
 
+def generate_account_code() -> str:
+    """Generate a unique 6-digit account code like FLT-A3B9C2."""
+    return f"FLT-{uuid.uuid4().hex[:6].upper()}"
+
+
 class User(Base):
     """Represents a registered user account."""
 
@@ -37,13 +42,23 @@ class User(Base):
         nullable=False,
     )
 
+    # Unique account-level pairing code — phones use this to request access
+    account_code: Mapped[str] = mapped_column(
+        String(32), unique=True, index=True, default=generate_account_code, nullable=False
+    )
+
     # Vehicles owned by this user
     vehicles: Mapped[list["Vehicle"]] = relationship(
         "Vehicle", back_populates="user", cascade="all, delete-orphan"
     )
 
+    # Pairing requests sent to this user
+    pairing_requests: Mapped[list["PairingRequest"]] = relationship(
+        "PairingRequest", back_populates="user", cascade="all, delete-orphan"
+    )
+
     def __repr__(self) -> str:
-        return f"<User id={self.id} email={self.email!r}>"
+        return f"<User id={self.id} email={self.email!r} code={self.account_code!r}>"
 
 
 class Vehicle(Base):
@@ -106,5 +121,38 @@ class Location(Base):
         return (
             f"<Location id={self.id} vehicle_id={self.vehicle_id} "
             f"lat={self.latitude} lon={self.longitude}>"
+        )
+
+
+class PairingRequest(Base):
+    """A request from a phone to pair with a user's account."""
+
+    __tablename__ = "pairing_requests"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    device_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="pending"
+    )  # pending / approved / rejected
+    vehicle_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger, ForeignKey("vehicles.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    # Relationships
+    user: Mapped["User"] = relationship("User", back_populates="pairing_requests")
+    vehicle: Mapped[Optional["Vehicle"]] = relationship("Vehicle")
+
+    def __repr__(self) -> str:
+        return (
+            f"<PairingRequest id={self.id} device={self.device_id!r} "
+            f"status={self.status!r}>"
         )
 

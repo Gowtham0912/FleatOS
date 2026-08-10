@@ -32,13 +32,19 @@ async def post_location(
     """
     Called every 5 seconds by the Android app.
 
-    1. Upsert the vehicle record.
+    1. Verify device is approved.
     2. Insert a new location row.
     3. Broadcast the update to all connected WebSocket clients.
     4. Return the saved location object.
     """
     try:
         vehicle, location = await record_location(db, payload)
+    except ValueError as exc:
+        # Device not approved — clear message to GPS sender
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(exc),
+        )
     except Exception as exc:
         logger.exception("Failed to record location: %s", exc)
         raise HTTPException(
@@ -65,3 +71,4 @@ async def post_location(
     )
 
     return location
+

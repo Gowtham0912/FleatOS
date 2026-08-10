@@ -146,3 +146,53 @@ export async function checkHealth() {
   if (!res.ok) throw new Error('Health check failed')
   return res.json()
 }
+
+
+// ── Pairing Request API ────────────────────────────────────────────────────
+
+/**
+ * Fetch pairing requests for current user.
+ * @param {string|null} statusFilter - optional filter: 'pending', 'approved', 'rejected'
+ */
+export async function fetchPairingRequests(statusFilter = null) {
+  const url = statusFilter
+    ? `${BASE_URL}/pairing/requests?status_filter=${statusFilter}`
+    : `${BASE_URL}/pairing/requests`
+  const res = await fetch(url, {
+    headers: getAuthHeaders(),
+  })
+  if (!res.ok) throw new Error('Failed to fetch pairing requests')
+  return res.json()
+}
+
+/**
+ * Approve a pairing request with a vehicle name.
+ */
+export async function approvePairingRequest(requestId, vehicleName) {
+  const res = await fetch(`${BASE_URL}/pairing/requests/${requestId}/approve`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ vehicle_name: vehicleName }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || 'Failed to approve request')
+  }
+  return res.json()
+}
+
+/**
+ * Reject a pairing request.
+ */
+export async function rejectPairingRequest(requestId) {
+  const res = await fetch(`${BASE_URL}/pairing/requests/${requestId}/reject`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || 'Failed to reject request')
+  }
+  return res.json()
+}
+
