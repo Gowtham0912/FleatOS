@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import FleetMap from '../components/FleetMap'
 import VehicleList from '../components/VehicleList'
 import TopBar from '../components/TopBar'
@@ -9,6 +9,13 @@ import { deleteVehicle, deleteUnlinkedVehicles } from '../api/fleetApi'
  */
 export default function Dashboard({ vehicles, locations, isLoading, lastMessage, isConnected, onRefresh }) {
   const [selectedVehicle, setSelectedVehicle] = useState(null)
+
+  // Interpolated positions from AnimatedMarker for live coordinate display
+  const [interpolatedPositions, setInterpolatedPositions] = useState({})
+
+  const handleInterpolatedPositions = useCallback((positions) => {
+    setInterpolatedPositions(positions)
+  }, [])
 
   const handleSelect = (vehicle) => {
     setSelectedVehicle((prev) => prev?.id === vehicle.id ? null : vehicle)
@@ -33,6 +40,15 @@ export default function Dashboard({ vehicles, locations, isLoading, lastMessage,
     }
   }
 
+  // Use interpolated position if available, otherwise fall back to raw GPS
+  const getDisplayCoords = (vehicleId) => {
+    const interp = interpolatedPositions[vehicleId]
+    if (interp) return interp
+    const loc = locations[vehicleId]
+    if (loc) return { latitude: loc.latitude, longitude: loc.longitude }
+    return null
+  }
+
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <TopBar
@@ -50,6 +66,7 @@ export default function Dashboard({ vehicles, locations, isLoading, lastMessage,
             locations={locations}
             selectedVehicle={selectedVehicle}
             lastWsMessage={lastMessage}
+            onInterpolatedPositions={handleInterpolatedPositions}
           />
 
           {/* Overlay: no vehicles hint */}
@@ -65,17 +82,26 @@ export default function Dashboard({ vehicles, locations, isLoading, lastMessage,
             </div>
           )}
 
-          {/* Selected vehicle info overlay (bottom-left) */}
-          {selectedVehicle && locations[selectedVehicle.id] && (
-            <div className="absolute bottom-5 left-5 bg-white border border-slate-200 shadow-md rounded-lg px-4 py-3 animate-slide-in">
-              <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wider mb-0.5">Selected Device</p>
-              <p className="text-sm font-bold text-slate-900">{selectedVehicle.name}</p>
-              <p className="text-xs font-mono text-slate-600 mt-0.5">
-                {locations[selectedVehicle.id].latitude.toFixed(6)},{' '}
-                {locations[selectedVehicle.id].longitude.toFixed(6)}
-              </p>
-            </div>
-          )}
+          {/* Selected vehicle info overlay (bottom-left) — shows live interpolated coords */}
+          {selectedVehicle && locations[selectedVehicle.id] && (() => {
+            const coords = getDisplayCoords(selectedVehicle.id)
+            return coords ? (
+              <div className="absolute bottom-5 left-5 bg-white border border-slate-200 shadow-md rounded-lg px-4 py-3 animate-slide-in">
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                  </span>
+                  <p className="text-[10px] text-green-600 font-bold uppercase tracking-wider">Live Tracking</p>
+                </div>
+                <p className="text-sm font-bold text-slate-900">{selectedVehicle.name}</p>
+                <p className="text-xs font-mono text-slate-600 mt-0.5">
+                  {coords.latitude.toFixed(6)},{' '}
+                  {coords.longitude.toFixed(6)}
+                </p>
+              </div>
+            ) : null
+          })()}
         </div>
 
         {/* ── Vehicle list panel ────────────────────────────────────────── */}

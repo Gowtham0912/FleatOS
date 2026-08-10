@@ -39,9 +39,10 @@ async def get_vehicles(
     db: AsyncSession = Depends(get_db),
     current_user: User | None = Depends(get_current_user),
 ):
-    """Return vehicles (filtered by user if authenticated)."""
-    user_id = current_user.id if current_user else None
-    vehicles = await list_vehicles(db, user_id=user_id)
+    """Return vehicles owned by logged-in user. Returns [] if unauthenticated."""
+    if not current_user:
+        return []
+    vehicles = await list_vehicles(db, user_id=current_user.id)
     return vehicles
 
 

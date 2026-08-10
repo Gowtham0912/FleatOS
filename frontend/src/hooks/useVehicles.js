@@ -1,27 +1,35 @@
 import { useState, useEffect, useCallback } from 'react'
 import { fetchVehicles, fetchVehicle } from '../api/fleetApi'
+import { useAuth } from '../context/AuthContext'
 
 /**
- * useVehicles — fetches vehicles from REST API and merges live WS updates.
+ * useVehicles — fetches vehicles for the logged-in user and merges live WS updates.
  *
  * @param {Object|null} wsMessage - latest message from useWebSocket
  * @returns {{ vehicles, locations, isLoading, error, refresh }}
  */
 export function useVehicles(wsMessage) {
   const [vehicles, setVehicles]   = useState([])
-  const [locations, setLocations] = useState({}) // { [vehicleId]: LocationObject }
+  const [locations, setLocations] = useState({})
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError]         = useState(null)
+  const { user } = useAuth()
 
   // ── Initial load ────────────────────────────────────────────────────────
   const loadVehicles = useCallback(async () => {
+    if (!user) {
+      setVehicles([])
+      setLocations({})
+      setIsLoading(false)
+      return
+    }
+
     try {
       setIsLoading(true)
       setError(null)
       const list = await fetchVehicles()
       setVehicles(list)
 
-      // For each vehicle, fetch its latest location
       const locationMap = {}
       await Promise.all(
         list.map(async (v) => {
@@ -31,7 +39,7 @@ export function useVehicles(wsMessage) {
               locationMap[v.id] = detail.latest_location
             }
           } catch {
-            // Vehicle with no location yet — skip silently
+            // Skip vehicles with no location records yet
           }
         })
       )
@@ -41,7 +49,7 @@ export function useVehicles(wsMessage) {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [user])
 
   useEffect(() => {
     loadVehicles()
@@ -49,23 +57,23 @@ export function useVehicles(wsMessage) {
 
   // ── Live WebSocket updates ───────────────────────────────────────────────
   useEffect(() => {
-    if (!wsMessage) return
+    if (!wsMessage || !user) return
 
-    const { vehicle_id, vehicle_name, latitude, longitude, timestamp, device_id } = wsMessage
+    const { vehicle_id, latitude, longitude, timestamp } = wsMessage
 
-    // Upsert vehicle in the list
+    // Only merge WebSocket updates if the vehicle belongs to the logged-in user's fleet!
     setVehicles((prev) => {
-      const exists = prev.some((v) => v.id === vehicle_id)
-      if (exists) return prev
-      return [...prev, { id: vehicle_id, device_id, name: vehicle_name }]
-    })
+      const vehicleOwned = prev.some((v) => v.id === vehicle_id)
+      if (!vehicleOwned) return prev
 
-    // Update location map
-    setLocations((prev) => ({
-      ...prev,
-      [vehicle_id]: { latitude, longitude, timestamp },
-    }))
-  }, [wsMessage])
+      setLocations((locPrev) => ({
+        ...locPrev,
+        [vehicle_id]: { latitude, longitude, timestamp },
+      }))
+
+      return prev
+    })
+  }, [wsMessage, user])
 
   return {
     vehicles,
