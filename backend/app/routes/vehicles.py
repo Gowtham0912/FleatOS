@@ -160,13 +160,16 @@ async def delete_vehicle_by_id(
     vehicle_id: int,
     db: AsyncSession = Depends(get_db),
 ):
-    """Delete a specific vehicle by ID."""
+    """Delete a specific vehicle by ID and clear its pairing requests."""
+    from app.models import PairingRequest
     vehicle = await get_vehicle_by_id(db, vehicle_id)
     if vehicle is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Vehicle {vehicle_id} not found.",
         )
+    # Clear pairing requests for this device so it can be re-paired
+    await db.execute(delete(PairingRequest).where(PairingRequest.device_id == vehicle.device_id))
     await db.delete(vehicle)
     await db.commit()
     return {"message": f"Vehicle {vehicle_id} deleted successfully."}

@@ -217,9 +217,15 @@ async def create_pairing_request(
     db: AsyncSession, user_id: int, device_id: str
 ) -> PairingRequest:
     """
-    Create a new pairing request or return existing pending one.
-    If a previous request was rejected, allow re-requesting.
+    Create a new pairing request or return existing pending/approved one.
+    If the paired vehicle was deleted or previous request rejected, allow re-requesting.
     """
+    # Check for existing vehicle
+    v_res = await db.execute(
+        select(Vehicle).where(Vehicle.device_id == device_id, Vehicle.user_id == user_id)
+    )
+    vehicle = v_res.scalar_one_or_none()
+
     # Check for existing pending request from this device to this user
     result = await db.execute(
         select(PairingRequest).where(
@@ -242,7 +248,12 @@ async def create_pairing_request(
     )
     approved = result.scalar_one_or_none()
     if approved:
-        return approved
+        if vehicle is not None:
+            return approved
+        else:
+            # Vehicle was deleted! Reset/delete old approved request so user can create a new one
+            await db.delete(approved)
+            await db.flush()
 
     # Create new request
     req = PairingRequest(
@@ -369,16 +380,33 @@ async def check_device_pairing_status(
             "message": "Waiting for account owner to approve your device…",
         }
 
-    if req.status == "approved" and req.vehicle_id:
-        # Get vehicle name
-        v_result = await db.execute(
-            select(Vehicle).where(Vehicle.id == req.vehicle_id)
-        )
-        vehicle = v_result.scalar_one_or_none()
+    if req.status == "approved":
+        # Get vehicle name and check if it still exists
+        vehicle = None
+        if req.vehicle_id:
+            v_result = await db.execute(
+                select(Vehicle).where(Vehicle.id == req.vehicle_id)
+            )
+            vehicle = v_result.scalar_one_or_none()
+        
+        if not vehicle:
+            v_result = await db.execute(
+                select(Vehicle).where(Vehicle.device_id == device_id)
+            )
+            vehicle = v_result.scalar_one_or_none()
+
+        if vehicle:
+            return {
+                "status": "approved",
+                "vehicle_name": vehicle.name,
+                "message": "Device approved! GPS tracking is active.",
+            }
+
+        # Vehicle was deleted by owner!
         return {
-            "status": "approved",
-            "vehicle_name": vehicle.name if vehicle else None,
-            "message": "Device approved! GPS tracking is active.",
+            "status": "none",
+            "vehicle_name": None,
+            "message": "Vehicle was deleted by account owner. Please request pairing again.",
         }
 
     if req.status == "rejected":

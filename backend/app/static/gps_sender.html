@@ -489,8 +489,13 @@
       } else if (data.status === 'rejected') {
         stopPolling();
         showRejected();
+      } else if (data.status === 'none') {
+        if (isPaired || isTracking) {
+          stopPolling();
+          stopTracking();
+          resetToCodeEntry();
+        }
       }
-      // If still pending, keep polling
     } catch {
       // Network error, keep polling
     }
@@ -617,9 +622,17 @@
           log('ok', `OK — ping #${pingCount} (±${Math.round(accuracy)}m)`);
         } else if (res.status === 403) {
           res.json().then(data => {
-            log('err', data.detail || 'Device not approved');
-            setStatus('error', 'Not approved');
-          }).catch(() => log('err', 'HTTP 403 — device not approved'));
+            log('err', data.detail || 'Device not approved or vehicle deleted');
+            setStatus('error', 'Unapproved');
+            stopTracking();
+            stopPolling();
+            resetToCodeEntry();
+          }).catch(() => {
+            log('err', 'HTTP 403 — device not approved');
+            stopTracking();
+            stopPolling();
+            resetToCodeEntry();
+          });
         } else {
           log('err', `HTTP ${res.status} from backend`);
         }

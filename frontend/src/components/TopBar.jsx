@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import { Wifi, WifiOff, Activity, Smartphone, X, QrCode, Plus, Copy, Check } from 'lucide-react'
+import { Wifi, WifiOff, Activity, Smartphone, X, QrCode, Copy, Check } from 'lucide-react'
 import { format } from 'date-fns'
-import AddVehicleModal from './AddVehicleModal'
 import { useAuth } from '../context/AuthContext'
 
 // The backend host — live Render public backend
@@ -9,11 +8,10 @@ const BACKEND_HOST = 'https://fleet-backend-5i1b.onrender.com'
 
 /**
  * TopBar — shows page title, last update time, WS connection status,
- *          and buttons to add vehicles and connect phones via QR code.
+ *          and button to connect phones via QR code.
  */
-export default function TopBar({ title, isConnected, lastMessage, onVehicleAdded }) {
+export default function TopBar({ title, isConnected, lastMessage }) {
   const [showQr, setShowQr] = useState(false)
-  const [showAddModal, setShowAddModal] = useState(false)
   const [copiedCode, setCopiedCode] = useState(false)
   const { user } = useAuth()
 
@@ -58,18 +56,6 @@ export default function TopBar({ title, isConnected, lastMessage, onVehicleAdded
             </div>
           )}
 
-          {/* Add Vehicle Button (for logged in users) */}
-          {user && (
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold
-                         bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm cursor-pointer"
-            >
-              <Plus size={14} />
-              Add Vehicle
-            </button>
-          )}
-
           {/* Connect Phone button */}
           <button
             id="connect-phone-btn"
@@ -94,13 +80,6 @@ export default function TopBar({ title, isConnected, lastMessage, onVehicleAdded
           </div>
         </div>
       </header>
-
-      {/* Add Vehicle Modal */}
-      <AddVehicleModal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onVehicleAdded={onVehicleAdded}
-      />
 
       {/* ── QR / Account Code Modal ──────────────────────────────────────── */}
       {showQr && (
