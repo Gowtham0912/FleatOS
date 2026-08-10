@@ -15,6 +15,7 @@ export default function TopBar({ title, lastMessage }) {
   const [showQr, setShowQr] = useState(false)
   const [showLoginNotice, setShowLoginNotice] = useState(false)
   const [copiedCode, setCopiedCode] = useState(false)
+  const [copiedUrl, setCopiedUrl] = useState(false)
   const { user, logout } = useAuth()
 
   const lastTime = lastMessage?.timestamp
@@ -42,6 +43,14 @@ export default function TopBar({ title, lastMessage }) {
       navigator.clipboard.writeText(accountCode)
       setCopiedCode(true)
       setTimeout(() => setCopiedCode(false), 2000)
+    }
+  }
+
+  const copyUrl = () => {
+    if (GPS_URL) {
+      navigator.clipboard.writeText(GPS_URL)
+      setCopiedUrl(true)
+      setTimeout(() => setCopiedUrl(false), 2000)
     }
   }
 
@@ -208,26 +217,39 @@ export default function TopBar({ title, lastMessage }) {
               </div>
             </div>
 
-            {/* URL */}
+            {/* URL with Copy Button */}
             <div className="text-center w-full">
-              <p className="text-xs text-slate-500 mb-1">Or open this link on your phone:</p>
-              <a
-                href={GPS_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs font-mono text-blue-600 hover:underline break-all bg-slate-50 px-2 py-1 rounded border border-slate-200 block"
-              >
-                {GPS_URL}
-              </a>
+              <p className="text-xs text-slate-500 mb-1.5">Or open this link on your phone:</p>
+              <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-lg border border-slate-200">
+                <a
+                  href={GPS_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-mono text-blue-600 hover:underline truncate flex-1 text-left px-1"
+                  title={GPS_URL}
+                >
+                  {GPS_URL}
+                </a>
+                <button
+                  onClick={copyUrl}
+                  className="flex items-center gap-1 px-2 py-1 rounded bg-white border border-slate-200 text-slate-700
+                             hover:bg-slate-100 text-[11px] font-medium transition-colors cursor-pointer shrink-0"
+                  title="Copy link"
+                >
+                  {copiedUrl ? (
+                    <>
+                      <Check size={12} className="text-emerald-600" />
+                      <span className="text-emerald-600 font-semibold">Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy size={12} />
+                      <span>Copy</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
-
-            {/* Steps */}
-            <ol className="text-xs text-slate-600 space-y-1.5 self-start w-full border-t border-slate-100 pt-3">
-              <li><strong className="text-slate-900">1.</strong> Scan QR code with your phone camera</li>
-              <li><strong className="text-slate-900">2.</strong> Tap <strong className="text-slate-900">Start Tracking</strong> and grant location permission</li>
-              <li><strong className="text-slate-900">3.</strong> Approve the device request on your dashboard</li>
-              <li><strong className="text-slate-900">4.</strong> Device will appear on your map! 🗺️</li>
-            </ol>
           </div>
         </div>
       )}
