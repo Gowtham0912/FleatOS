@@ -272,7 +272,7 @@ async def approve_pairing_request(
     db: AsyncSession, request_id: int, user_id: int, vehicle_name: str
 ) -> PairingRequest:
     """
-    Approve a pairing request: create a vehicle linked to the user,
+    Approve a pairing request: create or reuse a vehicle linked to the user,
     bind the device_id, and mark the request as approved.
     """
     result = await db.execute(
@@ -287,16 +287,28 @@ async def approve_pairing_request(
     if req.status != "pending":
         raise ValueError(f"Request already {req.status}.")
 
-    # Create a new vehicle for this device, linked to the user
-    vehicle = Vehicle(
-        device_id=req.device_id,
-        name=vehicle_name.strip(),
-        user_id=user_id,
-        pairing_code=generate_pairing_code(),
-        share_code=generate_share_code(),
+    # Check if a vehicle with this device_id already exists
+    existing = await db.execute(
+        select(Vehicle).where(Vehicle.device_id == req.device_id)
     )
-    db.add(vehicle)
-    await db.flush()
+    vehicle = existing.scalar_one_or_none()
+
+    if vehicle:
+        # Reuse existing vehicle — update ownership and name
+        vehicle.user_id = user_id
+        vehicle.name = vehicle_name.strip()
+        await db.flush()
+    else:
+        # Create a new vehicle for this device, linked to the user
+        vehicle = Vehicle(
+            device_id=req.device_id,
+            name=vehicle_name.strip(),
+            user_id=user_id,
+            pairing_code=generate_pairing_code(),
+            share_code=generate_share_code(),
+        )
+        db.add(vehicle)
+        await db.flush()
 
     # Update the request
     req.status = "approved"
