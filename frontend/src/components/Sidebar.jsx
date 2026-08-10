@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react'
-import { NavLink, Link } from 'react-router-dom'
-import { LayoutDashboard, Truck, Navigation, Wifi, WifiOff, LogOut, User as UserIcon, Shield, Copy, Check } from 'lucide-react'
+import { NavLink } from 'react-router-dom'
+import { LayoutDashboard, Truck, Navigation, Wifi, WifiOff, Shield } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { fetchPairingRequests } from '../api/fleetApi'
 
 /**
- * Sidebar — simple clean left navigation panel with user profile.
+ * Sidebar — simple clean left navigation panel with device status.
  */
 export default function Sidebar({ isConnected, vehicleCount }) {
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   const [pendingCount, setPendingCount] = useState(0)
-  const [copiedAccountCode, setCopiedAccountCode] = useState(false)
 
   // Poll for pending pairing requests
   useEffect(() => {
@@ -75,64 +74,8 @@ export default function Sidebar({ isConnected, vehicleCount }) {
         ))}
       </nav>
 
-      {/* ── User Profile & Status ─────────────────────────────────────────── */}
+      {/* ── Status Footer ────────────────────────────────────────────────── */}
       <div className="p-4 border-t border-slate-200 space-y-3">
-        {/* User account chip */}
-        {user ? (
-          <>
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 flex items-center justify-between">
-              <div className="flex items-center gap-2 overflow-hidden">
-                <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold shrink-0">
-                  {user.full_name ? user.full_name[0].toUpperCase() : 'U'}
-                </div>
-                <div className="truncate">
-                  <p className="text-xs font-bold text-slate-900 truncate">{user.full_name}</p>
-                  <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
-                </div>
-              </div>
-              <button
-                onClick={logout}
-                title="Sign Out"
-                className="text-slate-400 hover:text-rose-600 p-1 rounded transition-colors cursor-pointer"
-              >
-                <LogOut size={14} />
-              </button>
-            </div>
-
-            {/* Account Code Card */}
-            {user.account_code && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-2.5">
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-[10px] text-blue-500 font-bold uppercase tracking-wider">Your Pairing Code</p>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(user.account_code)
-                      setCopiedAccountCode(true)
-                      setTimeout(() => setCopiedAccountCode(false), 2000)
-                    }}
-                    className="text-blue-400 hover:text-blue-600 p-0.5 rounded transition-colors cursor-pointer"
-                    title="Copy code"
-                  >
-                    {copiedAccountCode
-                      ? <Check size={12} className="text-emerald-600" />
-                      : <Copy size={12} />}
-                  </button>
-                </div>
-                <p className="text-sm font-bold font-mono text-blue-700 tracking-widest">{user.account_code}</p>
-                <p className="text-[9px] text-blue-400 mt-1">Share this with phone users to pair devices</p>
-              </div>
-            )}
-          </>
-        ) : (
-          <Link
-            to="/login"
-            className="flex items-center justify-center gap-2 w-full py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-600 rounded-lg text-xs font-semibold transition-colors"
-          >
-            <UserIcon size={14} />
-            <span>Sign In / Register</span>
-          </Link>
-        )}
-
         <div className="flex items-center justify-between px-1 pt-1">
           <div className="flex items-center gap-2">
             {isConnected

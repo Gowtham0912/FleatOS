@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Wifi, WifiOff, Activity, Navigation, X, QrCode, Copy, Check } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Activity, Navigation, X, QrCode, Copy, Check, LogOut, User as UserIcon, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
 import { useAuth } from '../context/AuthContext'
 
@@ -7,13 +8,14 @@ import { useAuth } from '../context/AuthContext'
 const BACKEND_HOST = 'https://fleet-backend-5i1b.onrender.com'
 
 /**
- * TopBar — shows page title, last update time, WS connection status,
- *          and button to connect phones via QR code.
+ * TopBar — shows page title, last update time, Connect GPS button,
+ *          and user profile chip in the top right.
  */
-export default function TopBar({ title, isConnected, lastMessage }) {
+export default function TopBar({ title, lastMessage }) {
   const [showQr, setShowQr] = useState(false)
+  const [showLoginNotice, setShowLoginNotice] = useState(false)
   const [copiedCode, setCopiedCode] = useState(false)
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
 
   const lastTime = lastMessage?.timestamp
     ? format(new Date(lastMessage.timestamp), 'HH:mm:ss')
@@ -26,6 +28,14 @@ export default function TopBar({ title, isConnected, lastMessage }) {
     : `${BACKEND_HOST}/gps`
 
   const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(GPS_URL)}&bgcolor=ffffff&color=0f172a&margin=10`
+
+  const handleConnectClick = () => {
+    if (!user) {
+      setShowLoginNotice(true)
+    } else {
+      setShowQr(true)
+    }
+  }
 
   const copyCode = () => {
     if (accountCode) {
@@ -47,7 +57,7 @@ export default function TopBar({ title, isConnected, lastMessage }) {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
           {/* Activity flash on new message */}
           {lastMessage && (
             <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 animate-fade-in mr-1" key={lastMessage.timestamp}>
@@ -59,7 +69,7 @@ export default function TopBar({ title, isConnected, lastMessage }) {
           {/* Connect GPS button */}
           <button
             id="connect-phone-btn"
-            onClick={() => setShowQr(true)}
+            onClick={handleConnectClick}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold
                        bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm cursor-pointer"
           >
@@ -67,19 +77,73 @@ export default function TopBar({ title, isConnected, lastMessage }) {
             Connect GPS
           </button>
 
-          {/* WS Status chip */}
-          <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border ${
-            isConnected
-              ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-              : 'bg-rose-50 border-rose-200 text-rose-700'
-          }`}>
-            {isConnected
-              ? <><Wifi size={13} /> Connected</>
-              : <><WifiOff size={13} /> Offline</>
-            }
+          {/* User Profile / Login (Rightmost Top Bar) */}
+          <div className="pl-3 border-l border-slate-200">
+            {user ? (
+              <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold shrink-0">
+                    {user.full_name ? user.full_name[0].toUpperCase() : 'U'}
+                  </div>
+                  <div className="hidden sm:block text-left">
+                    <p className="text-xs font-bold text-slate-900 leading-none">{user.full_name}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">{user.email}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={logout}
+                  title="Sign Out"
+                  className="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                >
+                  <LogOut size={15} />
+                </button>
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors"
+              >
+                <UserIcon size={14} />
+                <span>Sign In</span>
+              </Link>
+            )}
           </div>
         </div>
       </header>
+
+      {/* ── Login Required Warning Modal ─────────────────────────────────── */}
+      {showLoginNotice && (
+        <div
+          id="login-notice-backdrop"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4"
+          onClick={(e) => e.target.id === 'login-notice-backdrop' && setShowLoginNotice(false)}
+        >
+          <div className="relative bg-white rounded-xl border border-slate-200 p-6 flex flex-col items-center gap-4 text-center shadow-xl max-w-sm w-full animate-fade-in">
+            <button
+              onClick={() => setShowLoginNotice(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+            >
+              <X size={18} />
+            </button>
+            <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
+              <AlertCircle size={24} />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-slate-900">Sign In Required</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Please log in to your account first to generate your pairing code and connect GPS devices.
+              </p>
+            </div>
+            <Link
+              to="/login"
+              onClick={() => setShowLoginNotice(false)}
+              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg shadow-sm transition-colors text-center"
+            >
+              Sign In to Your Account
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* ── QR / Account Code Modal ──────────────────────────────────────── */}
       {showQr && (
