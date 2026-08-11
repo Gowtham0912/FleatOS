@@ -2,7 +2,10 @@
  * Fleet API client — REST endpoints wrapper with token authentication.
  */
 
-const BASE_URL = '/api'
+const BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.DEV ? '/api' : 'https://fleet-backend-5i1b.onrender.com')
+).replace(/\/$/, '')
 
 function getAuthHeaders() {
   const token = localStorage.getItem('fleet_token')

@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Truck, Navigation, Wifi, WifiOff, Shield } from 'lucide-react'
+import { LayoutDashboard, Truck, Navigation, Wifi, WifiOff, Shield, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { fetchPairingRequests } from '../api/fleetApi'
 
 /**
- * Sidebar — simple clean left navigation panel with device status.
+ * Sidebar — simple clean left navigation panel with mobile drawer support and device status.
  */
-export default function Sidebar({ isConnected, vehicleCount }) {
+export default function Sidebar({ isConnected, vehicleCount, isOpen, onClose }) {
   const { user } = useAuth()
   const [pendingCount, setPendingCount] = useState(0)
 
@@ -33,29 +33,39 @@ export default function Sidebar({ isConnected, vehicleCount }) {
     { to: '/requests',   icon: Shield,          label: 'Requests', badge: pendingCount },
   ]
 
-  return (
-    <aside className="flex flex-col w-60 min-h-screen bg-white border-r border-slate-200 shrink-0">
-
-      {/* ── Logo ─────────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-200">
-        <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0 shadow-sm">
-          <Navigation size={16} className="text-white" />
+  const sidebarContent = (
+    <div className="flex flex-col h-full bg-white border-r border-slate-200 w-64 md:w-60">
+      {/* ── Logo & Header ────────────────────────────────────────────────── */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0 shadow-sm">
+            <Navigation size={16} className="text-white" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-slate-900 leading-none">Fleet Tracker</p>
+            <p className="text-xs text-slate-500 mt-1">GPS Control Panel</p>
+          </div>
         </div>
-        <div>
-          <p className="text-sm font-bold text-slate-900 leading-none">Fleet Tracker</p>
-          <p className="text-xs text-slate-500 mt-1">GPS Control Panel</p>
-        </div>
+        {/* Mobile close button */}
+        <button
+          onClick={onClose}
+          className="md:hidden p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+          title="Close menu"
+        >
+          <X size={18} />
+        </button>
       </div>
 
       {/* ── Nav items ────────────────────────────────────────────────────── */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {navItems.map(({ to, icon: Icon, label, badge }) => (
           <NavLink
             key={to}
             to={to}
             end={to === '/'}
+            onClick={onClose}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 isActive
                   ? 'bg-blue-50 text-blue-600 font-semibold'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -75,7 +85,7 @@ export default function Sidebar({ isConnected, vehicleCount }) {
       </nav>
 
       {/* ── Status Footer ────────────────────────────────────────────────── */}
-      <div className="p-4 border-t border-slate-200 space-y-3">
+      <div className="p-4 border-t border-slate-200 space-y-3 shrink-0">
         <div className="flex items-center justify-between px-1 pt-1">
           <div className="flex items-center gap-2">
             {isConnected
@@ -94,7 +104,30 @@ export default function Sidebar({ isConnected, vehicleCount }) {
           <p className="text-base font-bold text-slate-900 mt-0.5">{vehicleCount}</p>
         </div>
       </div>
-    </aside>
+    </div>
+  )
+
+  return (
+    <>
+      {/* Desktop Persistent Sidebar */}
+      <aside className="hidden md:flex shrink-0 h-full">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile Slide-over Drawer Backdrop */}
+      {isOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex">
+          <div
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity animate-fade-in"
+            onClick={onClose}
+          />
+          <aside className="relative z-10 flex flex-col h-full max-w-xs w-full shadow-2xl animate-slide-in">
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
+    </>
   )
 }
+
 

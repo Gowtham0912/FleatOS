@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Activity, Navigation, X, QrCode, Copy, Check, LogOut, User as UserIcon, AlertCircle } from 'lucide-react'
+import { Activity, Navigation, X, QrCode, Copy, Check, LogOut, User as UserIcon, AlertCircle, Menu } from 'lucide-react'
 import { format } from 'date-fns'
 import { useAuth } from '../context/AuthContext'
 
@@ -11,7 +11,7 @@ const BACKEND_HOST = 'https://fleet-backend-5i1b.onrender.com'
  * TopBar — shows page title, last update time, Connect GPS button,
  *          and user profile chip in the top right.
  */
-export default function TopBar({ title, lastMessage }) {
+export default function TopBar({ title, lastMessage, onToggleMobileMenu }) {
   const [showQr, setShowQr] = useState(false)
   const [showLoginNotice, setShowLoginNotice] = useState(false)
   const [copiedCode, setCopiedCode] = useState(false)
@@ -56,20 +56,33 @@ export default function TopBar({ title, lastMessage }) {
 
   return (
     <>
-      <header className="flex items-center justify-between px-6 py-3.5 bg-white border-b border-slate-200 shrink-0">
-        <div>
-          <h1 className="text-base font-bold text-slate-900">{title}</h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            {lastTime
-              ? `Last ping: ${lastTime}`
-              : 'Waiting for GPS data…'}
-          </p>
+      <header className="flex items-center justify-between px-3.5 py-2.5 md:px-6 md:py-3.5 bg-white border-b border-slate-200 shrink-0">
+        <div className="flex items-center gap-3">
+          {/* Mobile Menu Button */}
+          {onToggleMobileMenu && (
+            <button
+              onClick={onToggleMobileMenu}
+              className="md:hidden p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+              title="Open Navigation"
+            >
+              <Menu size={20} />
+            </button>
+          )}
+
+          <div>
+            <h1 className="text-sm md:text-base font-bold text-slate-900 leading-tight">{title}</h1>
+            <p className="text-[11px] md:text-xs text-slate-500 mt-0.5">
+              {lastTime
+                ? `Last ping: ${lastTime}`
+                : 'Waiting for GPS data…'}
+            </p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3">
           {/* Activity flash on new message */}
           {lastMessage && (
-            <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 animate-fade-in mr-1" key={lastMessage.timestamp}>
+            <div className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-emerald-600 animate-fade-in mr-1" key={lastMessage.timestamp}>
               <Activity size={13} />
               <span>Ping received</span>
             </div>
@@ -79,22 +92,23 @@ export default function TopBar({ title, lastMessage }) {
           <button
             id="connect-phone-btn"
             onClick={handleConnectClick}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold
+            className="flex items-center gap-1.5 px-2.5 py-1.5 md:px-3 md:py-1.5 rounded-lg text-xs font-semibold
                        bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm cursor-pointer"
           >
             <Navigation size={13} />
-            Connect GPS
+            <span className="hidden sm:inline">Connect GPS</span>
+            <span className="sm:hidden">Connect</span>
           </button>
 
           {/* User Profile / Login (Rightmost Top Bar) */}
-          <div className="pl-3 border-l border-slate-200">
+          <div className="pl-2 md:pl-3 border-l border-slate-200">
             {user ? (
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold shrink-0">
+                  <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold shrink-0">
                     {user.full_name ? user.full_name[0].toUpperCase() : 'U'}
                   </div>
-                  <div className="hidden sm:block text-left">
+                  <div className="hidden md:block text-left">
                     <p className="text-xs font-bold text-slate-900 leading-none">{user.full_name}</p>
                     <p className="text-[10px] text-slate-400 mt-0.5">{user.email}</p>
                   </div>
@@ -110,10 +124,10 @@ export default function TopBar({ title, lastMessage }) {
             ) : (
               <Link
                 to="/login"
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors"
               >
                 <UserIcon size={14} />
-                <span>Sign In</span>
+                <span className="hidden sm:inline">Sign In</span>
               </Link>
             )}
           </div>

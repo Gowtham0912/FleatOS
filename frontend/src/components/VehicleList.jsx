@@ -17,7 +17,7 @@ export default function VehicleList({ vehicles, locations, selectedVehicle, onSe
   )
 
   return (
-    <div className="flex flex-col h-full bg-white border-l border-slate-200 w-80 shrink-0">
+    <div className="flex flex-col h-full w-full bg-white border-t md:border-t-0 md:border-l border-slate-200 shrink-0">
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="px-4 pt-4 pb-3 border-b border-slate-200">
