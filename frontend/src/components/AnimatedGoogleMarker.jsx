@@ -1,6 +1,5 @@
-import { useEffect, useRef, useMemo } from 'react'
-import { Marker, Popup } from 'react-leaflet'
-import L from 'leaflet'
+import { useEffect, useRef, useMemo, useState } from 'react'
+import { MarkerF, InfoWindowF } from '@react-google-maps/api'
 import { formatDistanceToNow } from 'date-fns'
 
 const INTERPOLATION_DURATION_MS = 5000
@@ -36,52 +35,11 @@ function getContinuousRotation(current, target) {
   return current + diff
 }
 
-const vehicleIcon = (isSelected) =>
-  L.divIcon({
-    className: 'vehicle-marker-icon',
-    html: `
-      <div style="
-        position: relative;
-        width: 36px;
-        height: 36px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      ">
-        <div style="
-          position: absolute;
-          width: ${isSelected ? '32px' : '26px'};
-          height: ${isSelected ? '32px' : '26px'};
-          border-radius: 50%;
-          background: ${isSelected ? 'rgba(37, 99, 235, 0.25)' : 'rgba(2, 132, 199, 0.2)'};
-          animation: pulse 2s infinite;
-        "></div>
-        <div class="vehicle-icon-inner" style="
-          position: relative;
-          width: ${isSelected ? '22px' : '18px'};
-          height: ${isSelected ? '22px' : '18px'};
-          border-radius: 4px;
-          background: ${isSelected ? '#2563EB' : '#0284C7'};
-          border: 2px solid #FFFFFF;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-          will-change: transform;
-        ">
-           <svg viewBox="0 0 24 24" fill="white" style="width:100%; height:100%; padding: 2px;">
-             <path d="M12 2L2 22L12 18L22 22L12 2Z" />
-           </svg>
-        </div>
-      </div>
-    `,
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
-    popupAnchor: [0, -18],
-  })
-
 function lerp(a, b, t) {
   return a + (b - a) * t
 }
 
-export default function AnimatedMarker({
+export default function AnimatedGoogleMarker({
   vehicle,
   location,
   isSelected,
@@ -89,6 +47,7 @@ export default function AnimatedMarker({
 }) {
   const markerRef = useRef(null)
   const animationRef = useRef(null)
+  const [showInfoWindow, setShowInfoWindow] = useState(false)
 
   const animState = useRef({
     startTime: null,
@@ -103,13 +62,28 @@ export default function AnimatedMarker({
     speed: 0,       // m/s for prediction
   })
 
-  // Display state
   const currentPos = useRef(null)
 
-  const icon = useMemo(() => vehicleIcon(isSelected), [isSelected])
+  const getVehicleIcon = (selected, rotation) => {
+    if (!window.google) return null;
+    return {
+      path: 'M12 2L2 22L12 18L22 22L12 2Z',
+      fillColor: selected ? '#2563EB' : '#0284C7',
+      fillOpacity: 1,
+      strokeWeight: 2,
+      strokeColor: '#FFFFFF',
+      scale: 1.2,
+      anchor: new window.google.maps.Point(12, 12),
+      rotation: rotation
+    }
+  }
+
+  const handleMarkerLoad = (marker) => {
+    markerRef.current = marker
+  }
 
   useEffect(() => {
-    if (!location) return
+    if (!location || !window.google) return
 
     const newLat = location.matched_latitude ?? location.latitude
     const newLng = location.matched_longitude ?? location.longitude
@@ -137,12 +111,8 @@ export default function AnimatedMarker({
       
       const marker = markerRef.current
       if (marker) {
-        marker.setLatLng([newLat, newLng])
-        const el = marker.getElement()
-        if (el) {
-          const inner = el.querySelector('.vehicle-icon-inner')
-          if (inner) inner.style.transform = `rotate(${state.currentRot}deg)`
-        }
+        marker.setPosition({ lat: newLat, lng: newLng })
+        marker.setIcon(getVehicleIcon(isSelected, state.currentRot))
       }
       if (onInterpolatedPosition) {
         onInterpolatedPosition(vehicle.id, newLat, newLng)
@@ -150,13 +120,9 @@ export default function AnimatedMarker({
       return
     }
 
-    // Build the new route starting from our current interpolated position
-    // to avoid jumps.
     const route = [ { ...currentPos.current } ]
     
-    // Add geometry points if they are far enough from our current pos
     if (geom.length > 1) {
-      // Skip the first geometry point if it's very close to our current pos
       for (let i = 1; i < geom.length; i++) {
         route.push(geom[i])
       }
@@ -164,10 +130,8 @@ export default function AnimatedMarker({
       route.push({ lat: newLat, lng: newLng })
     }
     
-    // Force the exact target as the last point
     route[route.length - 1] = { lat: newLat, lng: newLng }
 
-    // Precalculate distances
     let totalDist = 0
     const segments = []
     for (let i = 0; i < route.length - 1; i++) {
@@ -181,10 +145,8 @@ export default function AnimatedMarker({
     state.segments = segments
     state.startTime = now
     
-    // Rotation
     state.startRot = state.currentRot
     
-    // Calculate expected heading
     let expectedHeading = location.heading
     if (!expectedHeading && route.length > 1) {
       expectedHeading = getHeading(route[route.length - 2], route[route.length - 1])
@@ -201,7 +163,7 @@ export default function AnimatedMarker({
 
     state.targetRot = getContinuousRotation(state.startRot, expectedHeading || 0)
 
-  }, [location, vehicle.id, onInterpolatedPosition])
+  }, [location, vehicle.id, onInterpolatedPosition, isSelected])
 
   useEffect(() => {
     let running = true
@@ -222,7 +184,6 @@ export default function AnimatedMarker({
         let lat, lng, rot
         
         if (rawT <= 1) {
-          // Normal interpolation along route
           const targetDist = rawT * state.totalDist
           let distSoFar = 0
           let currentSeg = state.segments[0]
@@ -239,20 +200,14 @@ export default function AnimatedMarker({
           lat = lerp(currentSeg.start.lat, currentSeg.end.lat, segT)
           lng = lerp(currentSeg.start.lng, currentSeg.end.lng, segT)
           
-          // Interpolate rotation
           rot = lerp(state.startRot, state.targetRot, rawT)
-          
-          // Also orient slightly to the current segment heading if we want, but simple lerp to target is smoother.
         } else {
-          // Prediction phase
           const overtime = elapsed - duration
           if (overtime > PREDICTION_TIMEOUT_MS) {
-            // Stop predicting, vehicle is stale
             lat = state.route[state.route.length - 1].lat
             lng = state.route[state.route.length - 1].lng
             rot = state.targetRot
           } else {
-            // Predict forward based on speed and heading
             const lastPt = state.route[state.route.length - 1]
             const dist = state.speed * (overtime / 1000)
             const brng = state.targetRot * Math.PI / 180
@@ -275,14 +230,8 @@ export default function AnimatedMarker({
         currentPos.current = { lat, lng }
         state.currentRot = rot
         
-        marker.setLatLng([lat, lng])
-        
-        // Update DOM element rotation
-        const el = marker.getElement()
-        if (el) {
-          const inner = el.querySelector('.vehicle-icon-inner')
-          if (inner) inner.style.transform = `rotate(${rot}deg)`
-        }
+        marker.setPosition({ lat, lng })
+        marker.setIcon(getVehicleIcon(isSelected, rot))
 
         if (onInterpolatedPosition && (now - lastCallbackTime > CALLBACK_THROTTLE_MS)) {
           lastCallbackTime = now
@@ -301,42 +250,50 @@ export default function AnimatedMarker({
         cancelAnimationFrame(animationRef.current)
       }
     }
-  }, [vehicle.id, onInterpolatedPosition])
+  }, [vehicle.id, onInterpolatedPosition, isSelected])
 
   const initialPos = location
-    ? [location.matched_latitude ?? location.latitude, location.matched_longitude ?? location.longitude]
-    : [0, 0]
+    ? { lat: location.matched_latitude ?? location.latitude, lng: location.matched_longitude ?? location.longitude }
+    : { lat: 0, lng: 0 }
 
   if (!location) return null
 
   return (
-    <Marker
-      ref={markerRef}
-      position={initialPos}
-      icon={icon}
-    >
-      <Popup>
-        <div style={{ fontFamily: 'Inter, sans-serif', minWidth: '170px' }}>
-          <p style={{ fontWeight: 700, fontSize: '13px', color: '#0F172A', marginBottom: '2px' }}>
-            {vehicle.name}
-          </p>
-          <p style={{ fontSize: '11px', color: '#64748B', fontFamily: 'monospace', marginBottom: '6px' }}>
-            {vehicle.device_id}
-          </p>
-          <hr style={{ border: 'none', borderTop: '1px solid #E2E8F0', margin: '6px 0' }} />
-          <p style={{ fontSize: '11px', color: '#334155', fontWeight: 500 }}>
-            {(location.matched_latitude ?? location.latitude).toFixed(6)}, {(location.matched_longitude ?? location.longitude).toFixed(6)}
-          </p>
-          <p style={{ fontSize: '10px', color: '#94A3B8', marginTop: '3px' }}>
-            {formatDistanceToNow(new Date(location.timestamp), { addSuffix: true })}
-          </p>
-          {location.speed !== undefined && (
-            <p style={{ fontSize: '10px', color: '#0284C7', marginTop: '3px', fontWeight: 600 }}>
-              {(location.speed * 3.6).toFixed(1)} km/h
+    <>
+      <MarkerF
+        onLoad={handleMarkerLoad}
+        position={initialPos}
+        icon={getVehicleIcon(isSelected, 0)}
+        onClick={() => setShowInfoWindow(true)}
+      />
+      {showInfoWindow && currentPos.current && (
+        <InfoWindowF
+          position={currentPos.current}
+          onCloseClick={() => setShowInfoWindow(false)}
+          options={{ pixelOffset: new window.google.maps.Size(0, -20) }}
+        >
+          <div style={{ fontFamily: 'Inter, sans-serif', minWidth: '170px' }}>
+            <p style={{ fontWeight: 700, fontSize: '13px', color: '#0F172A', marginBottom: '2px' }}>
+              {vehicle.name}
             </p>
-          )}
-        </div>
-      </Popup>
-    </Marker>
+            <p style={{ fontSize: '11px', color: '#64748B', fontFamily: 'monospace', marginBottom: '6px' }}>
+              {vehicle.device_id}
+            </p>
+            <hr style={{ border: 'none', borderTop: '1px solid #E2E8F0', margin: '6px 0' }} />
+            <p style={{ fontSize: '11px', color: '#334155', fontWeight: 500 }}>
+              {(location.matched_latitude ?? location.latitude).toFixed(6)}, {(location.matched_longitude ?? location.longitude).toFixed(6)}
+            </p>
+            <p style={{ fontSize: '10px', color: '#94A3B8', marginTop: '3px' }}>
+              {formatDistanceToNow(new Date(location.timestamp), { addSuffix: true })}
+            </p>
+            {location.speed !== undefined && (
+              <p style={{ fontSize: '10px', color: '#0284C7', marginTop: '3px', fontWeight: 600 }}>
+                {(location.speed * 3.6).toFixed(1)} km/h
+              </p>
+            )}
+          </div>
+        </InfoWindowF>
+      )}
+    </>
   )
 }
