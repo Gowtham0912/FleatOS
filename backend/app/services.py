@@ -11,6 +11,9 @@ from app.models import (
     generate_pairing_code, generate_share_code,
 )
 from app.schemas import LocationCreate, VehicleCreate
+import math
+from app.osrm import get_map_match
+from app.config import settings
 
 
 # ── Vehicle services ────────────────────────────────────────────────────────
@@ -198,6 +201,84 @@ async def get_location_history(
         .limit(limit)
     )
     return list(result.scalars().all())
+
+
+def calculate_distance(lat1, lon1, lat2, lon2):
+    R = 6371e3
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    delta_phi = math.radians(lat2 - lat1)
+    delta_lambda = math.radians(lon2 - lon1)
+    a = math.sin(delta_phi/2.0)**2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda/2.0)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+    return R * c
+
+
+async def get_matched_location_data(db: AsyncSession, vehicle: Vehicle, new_location: Location) -> dict:
+    """Get map-matched data from OSRM for the vehicle's recent history."""
+    history = await get_location_history(db, vehicle.id, limit=5)
+    history.reverse() # oldest first
+    
+    if len(history) < 2:
+        return {}
+
+    # Filter outliers
+    filtered = [history[0]]
+    for i in range(1, len(history)):
+        prev = filtered[-1]
+        curr = history[i]
+        dist = calculate_distance(prev.latitude, prev.longitude, curr.latitude, curr.longitude)
+        time_diff = (curr.timestamp - prev.timestamp).total_seconds()
+        if time_diff > 0:
+            speed_kmh = (dist / time_diff) * 3.6
+            if speed_kmh <= settings.GPS_OUTLIER_THRESHOLD_KMH:
+                filtered.append(curr)
+    
+    if len(filtered) < 2:
+        return {}
+
+    coords = [(loc.longitude, loc.latitude) for loc in filtered]
+    timestamps = [int(loc.timestamp.timestamp()) for loc in filtered]
+
+    match_data = await get_map_match(coords, timestamps=timestamps)
+    if not match_data or "matchings" not in match_data or not match_data["matchings"]:
+        return {}
+
+    matching = match_data["matchings"][0]
+    geom = matching.get("geometry", {})
+    
+    tracepoints = match_data.get("tracepoints", [])
+    valid_traces = [tp for tp in tracepoints if tp is not None]
+    if not valid_traces:
+        return {}
+        
+    last_trace = valid_traces[-1]
+    matched_lon, matched_lat = last_trace["location"]
+
+    geom_coords = geom.get("coordinates", [])
+    heading = 0.0
+    if len(geom_coords) >= 2:
+        lon1, lat1 = geom_coords[-2]
+        lon2, lat2 = geom_coords[-1]
+        y = math.sin(math.radians(lon2 - lon1)) * math.cos(math.radians(lat2))
+        x = math.cos(math.radians(lat1)) * math.sin(math.radians(lat2)) - \
+            math.sin(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.cos(math.radians(lon2 - lon1))
+        heading = (math.degrees(math.atan2(y, x)) + 360) % 360
+
+    speed = 0.0
+    if len(filtered) >= 2:
+        dist = calculate_distance(filtered[-2].latitude, filtered[-2].longitude, filtered[-1].latitude, filtered[-1].longitude)
+        td = (filtered[-1].timestamp - filtered[-2].timestamp).total_seconds()
+        if td > 0:
+            speed = dist / td
+
+    return {
+        "matched_latitude": matched_lat,
+        "matched_longitude": matched_lon,
+        "route_geometry": geom,
+        "heading": heading,
+        "speed": speed
+    }
 
 
 # ── Pairing Request services ───────────────────────────────────────────────

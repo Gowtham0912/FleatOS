@@ -1,27 +1,44 @@
 import { useEffect, useRef, useMemo } from 'react'
-import { Marker, Popup, useMap } from 'react-leaflet'
+import { Marker, Popup } from 'react-leaflet'
 import L from 'leaflet'
 import { formatDistanceToNow } from 'date-fns'
 
-/**
- * INTERPOLATION_DURATION_MS — the time over which the marker animates
- * from its previous position to the new one. Should match the GPS send
- * interval (~5 s) so the marker arrives just as the next ping comes in.
- */
 const INTERPOLATION_DURATION_MS = 5000
+const PREDICTION_TIMEOUT_MS = 10000
 
-/**
- * FRAME_INTERVAL_MS — minimum ms between position updates to avoid
- * excessive Leaflet DOM thrash. ~60 fps = 16 ms.
- */
-const FRAME_INTERVAL_MS = 16
+// Helper to calculate distance in meters
+function getDistance(p1, p2) {
+  const R = 6371e3
+  const dLat = (p2.lat - p1.lat) * Math.PI / 180
+  const dLon = (p2.lng - p1.lng) * Math.PI / 180
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(p1.lat * Math.PI / 180) * Math.cos(p2.lat * Math.PI / 180) *
+            Math.sin(dLon/2) * Math.sin(dLon/2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+  return R * c
+}
 
-/**
- * vehicleIcon — returns a high-precision Leaflet divIcon with a pulse ring.
- */
+// Helper to calculate heading (0-360)
+function getHeading(p1, p2) {
+  const lat1 = p1.lat * Math.PI / 180
+  const lat2 = p2.lat * Math.PI / 180
+  const dLon = (p2.lng - p1.lng) * Math.PI / 180
+  const y = Math.sin(dLon) * Math.cos(lat2)
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon)
+  let brng = Math.atan2(y, x) * 180 / Math.PI
+  return (brng + 360) % 360
+}
+
+function getContinuousRotation(current, target) {
+  let diff = target - current
+  diff = ((diff + 180) % 360) - 180
+  if (diff < -180) diff += 360 // edge case
+  return current + diff
+}
+
 const vehicleIcon = (isSelected) =>
   L.divIcon({
-    className: '',
+    className: 'vehicle-marker-icon',
     html: `
       <div style="
         position: relative;
@@ -39,16 +56,20 @@ const vehicleIcon = (isSelected) =>
           background: ${isSelected ? 'rgba(37, 99, 235, 0.25)' : 'rgba(2, 132, 199, 0.2)'};
           animation: pulse 2s infinite;
         "></div>
-        <div style="
+        <div class="vehicle-icon-inner" style="
           position: relative;
           width: ${isSelected ? '22px' : '18px'};
           height: ${isSelected ? '22px' : '18px'};
-          border-radius: 50%;
+          border-radius: 4px;
           background: ${isSelected ? '#2563EB' : '#0284C7'};
-          border: 2.5px solid #FFFFFF;
+          border: 2px solid #FFFFFF;
           box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-          transition: all 0.2s ease;
-        "></div>
+          will-change: transform;
+        ">
+           <svg viewBox="0 0 24 24" fill="white" style="width:100%; height:100%; padding: 2px;">
+             <path d="M12 2L2 22L12 18L22 22L12 2Z" />
+           </svg>
+        </div>
       </div>
     `,
     iconSize: [36, 36],
@@ -56,28 +77,10 @@ const vehicleIcon = (isSelected) =>
     popupAnchor: [0, -18],
   })
 
-/**
- * Linear interpolation between two values.
- */
 function lerp(a, b, t) {
   return a + (b - a) * t
 }
 
-/**
- * Linear motion for natural, constant vehicle speed along roads.
- */
-function linearMotion(t) {
-  return t
-}
-
-/**
- * AnimatedMarker — a Leaflet marker that smoothly interpolates
- * its position from the previous GPS coordinate to the latest one,
- * using requestAnimationFrame for butter-smooth 60fps animation.
- *
- * This eliminates the "jumping every 5 seconds" problem and makes
- * the vehicle appear to move continuously in real time.
- */
 export default function AnimatedMarker({
   vehicle,
   location,
@@ -87,43 +90,59 @@ export default function AnimatedMarker({
   const markerRef = useRef(null)
   const animationRef = useRef(null)
 
-  // Track previous and current target positions
-  const prevLatLng = useRef(null)
-  const targetLatLng = useRef(null)
-  const animStartTime = useRef(null)
-  const lastPingTime = useRef(null)
-  const animDuration = useRef(2000)
+  const animState = useRef({
+    startTime: null,
+    duration: 2000,
+    route: [],      // array of {lat, lng}
+    totalDist: 0,   // total distance of route
+    segments: [],   // precalculated distances between route points
+    startRot: 0,
+    targetRot: 0,
+    currentRot: 0,
+    lastPingTime: null,
+    speed: 0,       // m/s for prediction
+  })
 
-  // Current interpolated position for display
+  // Display state
   const currentPos = useRef(null)
 
   const icon = useMemo(() => vehicleIcon(isSelected), [isSelected])
 
-  // When a new location arrives, start a fresh interpolation
   useEffect(() => {
     if (!location) return
 
-    const newLat = location.latitude
-    const newLng = location.longitude
+    const newLat = location.matched_latitude ?? location.latitude
+    const newLng = location.matched_longitude ?? location.longitude
     const now = performance.now()
+    const state = animState.current
 
-    // Measure time since last ping to adapt animation speed automatically
-    if (lastPingTime.current) {
-      const pingInterval = now - lastPingTime.current
-      animDuration.current = Math.min(Math.max(pingInterval, 1000), 4000)
+    if (state.lastPingTime) {
+      const pingInterval = now - state.lastPingTime
+      state.duration = Math.min(Math.max(pingInterval, 1000), 5000)
+    } else {
+      state.duration = 2000
     }
-    lastPingTime.current = now
+    state.lastPingTime = now
+    
+    let geom = []
+    if (location.route_geometry && location.route_geometry.coordinates) {
+      geom = location.route_geometry.coordinates.map(c => ({ lat: c[1], lng: c[0] }))
+    }
 
-    // If this is the very first position, snap immediately
-    if (!targetLatLng.current) {
-      prevLatLng.current = { lat: newLat, lng: newLng }
-      targetLatLng.current = { lat: newLat, lng: newLng }
+    if (!currentPos.current) {
+      // First ping
       currentPos.current = { lat: newLat, lng: newLng }
-
-      // Snap marker
+      state.currentRot = location.heading || 0
+      state.route = []
+      
       const marker = markerRef.current
       if (marker) {
         marker.setLatLng([newLat, newLng])
+        const el = marker.getElement()
+        if (el) {
+          const inner = el.querySelector('.vehicle-icon-inner')
+          if (inner) inner.style.transform = `rotate(${state.currentRot}deg)`
+        }
       }
       if (onInterpolatedPosition) {
         onInterpolatedPosition(vehicle.id, newLat, newLng)
@@ -131,65 +150,143 @@ export default function AnimatedMarker({
       return
     }
 
-    // Skip if position hasn't actually changed
-    if (
-      targetLatLng.current.lat === newLat &&
-      targetLatLng.current.lng === newLng
-    ) {
-      return
+    // Build the new route starting from our current interpolated position
+    // to avoid jumps.
+    const route = [ { ...currentPos.current } ]
+    
+    // Add geometry points if they are far enough from our current pos
+    if (geom.length > 1) {
+      // Skip the first geometry point if it's very close to our current pos
+      for (let i = 1; i < geom.length; i++) {
+        route.push(geom[i])
+      }
+    } else {
+      route.push({ lat: newLat, lng: newLng })
+    }
+    
+    // Force the exact target as the last point
+    route[route.length - 1] = { lat: newLat, lng: newLng }
+
+    // Precalculate distances
+    let totalDist = 0
+    const segments = []
+    for (let i = 0; i < route.length - 1; i++) {
+      const d = getDistance(route[i], route[i+1])
+      segments.push({ start: route[i], end: route[i+1], dist: d })
+      totalDist += d
     }
 
-    // Set the current interpolated position as the new "from" point
-    // (so mid-animation updates don't cause jumps)
-    prevLatLng.current = currentPos.current
-      ? { ...currentPos.current }
-      : { ...targetLatLng.current }
-    targetLatLng.current = { lat: newLat, lng: newLng }
-    animStartTime.current = now
+    state.route = route
+    state.totalDist = totalDist
+    state.segments = segments
+    state.startTime = now
+    
+    // Rotation
+    state.startRot = state.currentRot
+    
+    // Calculate expected heading
+    let expectedHeading = location.heading
+    if (!expectedHeading && route.length > 1) {
+      expectedHeading = getHeading(route[route.length - 2], route[route.length - 1])
+    }
+
+    // Anti-jitter: If the vehicle moved less than 5 meters, it's likely just stationary GPS noise.
+    // Keep the previous heading and set speed to 0 so it doesn't wildly rotate or predict forward.
+    if (totalDist < 5) {
+      expectedHeading = state.startRot
+      state.speed = 0
+    } else {
+      state.speed = location.speed || (totalDist / (state.duration / 1000))
+    }
+
+    state.targetRot = getContinuousRotation(state.startRot, expectedHeading || 0)
+
   }, [location, vehicle.id, onInterpolatedPosition])
 
-  // Main animation loop using requestAnimationFrame
   useEffect(() => {
     let running = true
     let lastCallbackTime = 0
-    const CALLBACK_THROTTLE_MS = 150 // update overlay coords ~6×/sec
+    const CALLBACK_THROTTLE_MS = 150
 
     function animate(now) {
       if (!running) return
 
       const marker = markerRef.current
-      const from = prevLatLng.current
-      const to = targetLatLng.current
-
-      if (marker && from && to) {
-        const startTime = animStartTime.current
-        if (startTime !== null) {
-          const elapsed = now - startTime
-          const duration = animDuration.current || 2000
-          const rawT = Math.min(elapsed / duration, 1)
-          const t = linearMotion(rawT)
-
-          const lat = lerp(from.lat, to.lat, t)
-          const lng = lerp(from.lng, to.lng, t)
-
-          currentPos.current = { lat, lng }
-          marker.setLatLng([lat, lng])
-
-          // Throttle the React callback to avoid excessive re-renders
-          if (
-            onInterpolatedPosition &&
-            (now - lastCallbackTime > CALLBACK_THROTTLE_MS || rawT >= 1)
-          ) {
-            lastCallbackTime = now
-            onInterpolatedPosition(vehicle.id, lat, lng)
+      const state = animState.current
+      
+      if (marker && state.startTime !== null && state.route.length > 1) {
+        const elapsed = now - state.startTime
+        const duration = state.duration || 2000
+        
+        let rawT = elapsed / duration
+        let lat, lng, rot
+        
+        if (rawT <= 1) {
+          // Normal interpolation along route
+          const targetDist = rawT * state.totalDist
+          let distSoFar = 0
+          let currentSeg = state.segments[0]
+          
+          for (const seg of state.segments) {
+            if (distSoFar + seg.dist >= targetDist) {
+              currentSeg = seg
+              break
+            }
+            distSoFar += seg.dist
           }
-
-          // Animation complete — snap exactly to target
-          if (rawT >= 1) {
-            animStartTime.current = null
-            prevLatLng.current = { ...to }
-            currentPos.current = { ...to }
+          
+          const segT = currentSeg.dist > 0 ? (targetDist - distSoFar) / currentSeg.dist : 1
+          lat = lerp(currentSeg.start.lat, currentSeg.end.lat, segT)
+          lng = lerp(currentSeg.start.lng, currentSeg.end.lng, segT)
+          
+          // Interpolate rotation
+          rot = lerp(state.startRot, state.targetRot, rawT)
+          
+          // Also orient slightly to the current segment heading if we want, but simple lerp to target is smoother.
+        } else {
+          // Prediction phase
+          const overtime = elapsed - duration
+          if (overtime > PREDICTION_TIMEOUT_MS) {
+            // Stop predicting, vehicle is stale
+            lat = state.route[state.route.length - 1].lat
+            lng = state.route[state.route.length - 1].lng
+            rot = state.targetRot
+          } else {
+            // Predict forward based on speed and heading
+            const lastPt = state.route[state.route.length - 1]
+            const dist = state.speed * (overtime / 1000)
+            const brng = state.targetRot * Math.PI / 180
+            
+            const R = 6371e3
+            const lat1 = lastPt.lat * Math.PI / 180
+            const lon1 = lastPt.lng * Math.PI / 180
+            
+            const lat2 = Math.asin(Math.sin(lat1) * Math.cos(dist / R) +
+              Math.cos(lat1) * Math.sin(dist / R) * Math.cos(brng))
+            const lon2 = lon1 + Math.atan2(Math.sin(brng) * Math.sin(dist / R) * Math.cos(lat1),
+              Math.cos(dist / R) - Math.sin(lat1) * Math.sin(lat2))
+              
+            lat = lat2 * 180 / Math.PI
+            lng = lon2 * 180 / Math.PI
+            rot = state.targetRot
           }
+        }
+
+        currentPos.current = { lat, lng }
+        state.currentRot = rot
+        
+        marker.setLatLng([lat, lng])
+        
+        // Update DOM element rotation
+        const el = marker.getElement()
+        if (el) {
+          const inner = el.querySelector('.vehicle-icon-inner')
+          if (inner) inner.style.transform = `rotate(${rot}deg)`
+        }
+
+        if (onInterpolatedPosition && (now - lastCallbackTime > CALLBACK_THROTTLE_MS)) {
+          lastCallbackTime = now
+          onInterpolatedPosition(vehicle.id, lat, lng)
         }
       }
 
@@ -206,9 +303,8 @@ export default function AnimatedMarker({
     }
   }, [vehicle.id, onInterpolatedPosition])
 
-  // Initial position (will be overridden by animation immediately)
   const initialPos = location
-    ? [location.latitude, location.longitude]
+    ? [location.matched_latitude ?? location.latitude, location.matched_longitude ?? location.longitude]
     : [0, 0]
 
   if (!location) return null
@@ -221,41 +317,24 @@ export default function AnimatedMarker({
     >
       <Popup>
         <div style={{ fontFamily: 'Inter, sans-serif', minWidth: '170px' }}>
-          <p
-            style={{
-              fontWeight: 700,
-              fontSize: '13px',
-              color: '#0F172A',
-              marginBottom: '2px',
-            }}
-          >
+          <p style={{ fontWeight: 700, fontSize: '13px', color: '#0F172A', marginBottom: '2px' }}>
             {vehicle.name}
           </p>
-          <p
-            style={{
-              fontSize: '11px',
-              color: '#64748B',
-              fontFamily: 'monospace',
-              marginBottom: '6px',
-            }}
-          >
+          <p style={{ fontSize: '11px', color: '#64748B', fontFamily: 'monospace', marginBottom: '6px' }}>
             {vehicle.device_id}
           </p>
-          <hr
-            style={{
-              border: 'none',
-              borderTop: '1px solid #E2E8F0',
-              margin: '6px 0',
-            }}
-          />
+          <hr style={{ border: 'none', borderTop: '1px solid #E2E8F0', margin: '6px 0' }} />
           <p style={{ fontSize: '11px', color: '#334155', fontWeight: 500 }}>
-            {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
+            {(location.matched_latitude ?? location.latitude).toFixed(6)}, {(location.matched_longitude ?? location.longitude).toFixed(6)}
           </p>
           <p style={{ fontSize: '10px', color: '#94A3B8', marginTop: '3px' }}>
-            {formatDistanceToNow(new Date(location.timestamp), {
-              addSuffix: true,
-            })}
+            {formatDistanceToNow(new Date(location.timestamp), { addSuffix: true })}
           </p>
+          {location.speed !== undefined && (
+            <p style={{ fontSize: '10px', color: '#0284C7', marginTop: '3px', fontWeight: 600 }}>
+              {(location.speed * 3.6).toFixed(1)} km/h
+            </p>
+          )}
         </div>
       </Popup>
     </Marker>

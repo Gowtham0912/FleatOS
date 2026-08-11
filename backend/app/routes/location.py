@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.schemas import LocationCreate, LocationResponse
-from app.services import record_location
+from app.services import record_location, get_matched_location_data
 from app.websocket_manager import manager
 
 logger = logging.getLogger(__name__)
@@ -62,6 +62,12 @@ async def post_location(
         "longitude": location.longitude,
         "timestamp": location.timestamp.isoformat(),
     }
+    
+    try:
+        match_data = await get_matched_location_data(db, vehicle, location)
+        broadcast_payload.update(match_data)
+    except Exception as exc:
+        logger.warning("Map matching failed, falling back to raw coords: %s", exc)
     await manager.broadcast(broadcast_payload)
     logger.info(
         "Location recorded and broadcast | device=%s lat=%.6f lon=%.6f",

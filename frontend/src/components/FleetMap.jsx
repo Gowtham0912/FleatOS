@@ -50,7 +50,10 @@ export default function FleetMap({ vehicles, locations, selectedVehicle, lastWsM
       for (const vehicleId in locations) {
         const loc = locations[vehicleId]
         if (!loc) continue
-        const point = [loc.latitude, loc.longitude]
+        const point = [
+          loc.matched_latitude ?? loc.latitude, 
+          loc.matched_longitude ?? loc.longitude
+        ]
         const currentTrail = nextTrails[vehicleId] || []
         
         // Append point if distinct from last point
@@ -78,12 +81,15 @@ export default function FleetMap({ vehicles, locations, selectedVehicle, lastWsM
 
   const firstLocation = Object.values(locations)[0]
   const initialCenter = firstLocation
-    ? [firstLocation.latitude, firstLocation.longitude]
+    ? [firstLocation.matched_latitude ?? firstLocation.latitude, firstLocation.matched_longitude ?? firstLocation.longitude]
     : (userCenter || DEFAULT_CENTER)
   const initialZoom = (firstLocation || userCenter) ? 13 : DEFAULT_ZOOM
 
   const flyTarget = selectedVehicle && locations[selectedVehicle.id]
-    ? [locations[selectedVehicle.id].latitude, locations[selectedVehicle.id].longitude]
+    ? [
+        locations[selectedVehicle.id].matched_latitude ?? locations[selectedVehicle.id].latitude, 
+        locations[selectedVehicle.id].matched_longitude ?? locations[selectedVehicle.id].longitude
+      ]
     : null
 
   return (

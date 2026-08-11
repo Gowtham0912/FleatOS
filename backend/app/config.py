@@ -24,6 +24,11 @@ class Settings(BaseSettings):
         "http://localhost:3000",
     ]
 
+    # ── Tracking & OSRM ────────────────────────────────────────────────────────
+    OSRM_BASE_URL: str = "http://router.project-osrm.org"
+    MAP_MATCHING_ENABLED: bool = True
+    GPS_OUTLIER_THRESHOLD_KMH: float = 200.0
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
