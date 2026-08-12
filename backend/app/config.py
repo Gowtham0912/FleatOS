@@ -24,11 +24,10 @@ class Settings(BaseSettings):
         "http://localhost:3000",
     ]
 
-    # ── Tracking & API Keys ───────────────────────────────────────────────────
+    # ── Tracking & OSRM ────────────────────────────────────────────────────────
     OSRM_BASE_URL: str = "http://router.project-osrm.org"
     MAP_MATCHING_ENABLED: bool = True
     GPS_OUTLIER_THRESHOLD_KMH: float = 200.0
-    GOOGLE_MAPS_API_KEY: str | None = None
 
     model_config = SettingsConfigDict(
         env_file=".env",

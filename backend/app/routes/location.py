@@ -52,6 +52,7 @@ async def post_location(
             detail="Failed to record location.",
         )
 
+    # Fire-and-forget broadcast — dashboard clients get the update instantly
     broadcast_payload = {
         "event": "location_update",
         "device_id": vehicle.device_id,
@@ -67,13 +68,6 @@ async def post_location(
         broadcast_payload.update(match_data)
     except Exception as exc:
         logger.warning("Map matching failed, falling back to raw coords: %s", exc)
-
-    # Prioritize device-provided exact speed and heading over map-matched calculations
-    if payload.speed is not None:
-        broadcast_payload["speed"] = payload.speed
-    if payload.heading is not None:
-        broadcast_payload["heading"] = payload.heading
-
     await manager.broadcast(broadcast_payload)
     logger.info(
         "Location recorded and broadcast | device=%s lat=%.6f lon=%.6f",

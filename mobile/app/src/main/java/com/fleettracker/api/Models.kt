@@ -17,12 +17,6 @@ data class LocationPayload(
     @SerializedName("longitude")
     val longitude: Double,
 
-    @SerializedName("speed")
-    val speed: Float?,
-
-    @SerializedName("heading")
-    val heading: Float?,
-
     @SerializedName("timestamp")
     val timestamp: String          // ISO-8601 UTC string, e.g. "2025-01-01T12:00:00Z"
 )
