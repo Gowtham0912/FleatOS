@@ -36,18 +36,26 @@ export default function FleetGoogleMap({ vehicles, locations, selectedVehicle, l
     }
   }, [locations])
 
-  const DEFAULT_CENTER = { lat: 20.0, lng: 78.0 }
-  const DEFAULT_ZOOM = 5
+  const [initialCenter, setInitialCenter] = useState(null)
+  const [initialZoom, setInitialZoom] = useState(5)
 
-  const firstLocation = Object.values(locations)[0]
-  const initialCenter = firstLocation
-    ? {
-        lat: firstLocation.matched_latitude ?? firstLocation.latitude,
-        lng: firstLocation.matched_longitude ?? firstLocation.longitude
+  useEffect(() => {
+    if (!initialCenter) {
+      const firstLoc = Object.values(locations)[0]
+      if (firstLoc) {
+        setInitialCenter({
+          lat: firstLoc.matched_latitude ?? firstLoc.latitude,
+          lng: firstLoc.matched_longitude ?? firstLoc.longitude
+        })
+        setInitialZoom(13)
+      } else if (userCenter) {
+        setInitialCenter(userCenter)
+        setInitialZoom(13)
       }
-    : (userCenter || DEFAULT_CENTER)
-    
-  const initialZoom = (firstLocation || userCenter) ? 13 : DEFAULT_ZOOM
+    }
+  }, [locations, userCenter, initialCenter])
+
+  const DEFAULT_CENTER = { lat: 20.0, lng: 78.0 }
 
   const flyTarget = selectedVehicle && locations[selectedVehicle.id]
     ? {
@@ -105,7 +113,7 @@ export default function FleetGoogleMap({ vehicles, locations, selectedVehicle, l
   return (
     <GoogleMap
       mapContainerStyle={containerStyle}
-      center={initialCenter}
+      center={initialCenter || DEFAULT_CENTER}
       zoom={initialZoom}
       onLoad={onLoad}
       onUnmount={onUnmount}

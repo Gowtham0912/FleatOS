@@ -95,13 +95,15 @@ class LocationTrackingService : Service() {
                 result.lastLocation?.let { location ->
                     val lat = location.latitude
                     val lon = location.longitude
+                    val speed = if (location.hasSpeed()) location.speed else null
+                    val heading = if (location.hasBearing()) location.bearing else null
                     val ts  = DateTimeFormatter.ISO_INSTANT.format(Instant.now())
 
-                    Log.d(TAG, "GPS fix: lat=$lat lon=$lon")
+                    Log.d(TAG, "GPS fix: lat=$lat lon=$lon speed=$speed")
 
                     // POST to backend in IO dispatcher
                     serviceScope.launch {
-                        sendLocationToBackend(lat, lon, ts)
+                        sendLocationToBackend(lat, lon, speed, heading, ts)
                     }
 
                     // Notify MainActivity via broadcast
@@ -125,12 +127,14 @@ class LocationTrackingService : Service() {
 
     // ── Backend communication ────────────────────────────────────────────────
 
-    private suspend fun sendLocationToBackend(lat: Double, lon: Double, ts: String) {
+    private suspend fun sendLocationToBackend(lat: Double, lon: Double, speed: Float?, heading: Float?, ts: String) {
         try {
             val payload = LocationPayload(
                 deviceId  = deviceId,
                 latitude  = lat,
                 longitude = lon,
+                speed     = speed,
+                heading   = heading,
                 timestamp = ts
             )
 

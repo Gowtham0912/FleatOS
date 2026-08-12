@@ -12,7 +12,7 @@ from app.models import (
 )
 from app.schemas import LocationCreate, VehicleCreate
 import math
-from app.osrm import get_map_match
+from app.google_maps_api import snap_to_roads
 from app.config import settings
 
 
@@ -215,7 +215,7 @@ def calculate_distance(lat1, lon1, lat2, lon2):
 
 
 async def get_matched_location_data(db: AsyncSession, vehicle: Vehicle, new_location: Location) -> dict:
-    """Get map-matched data from OSRM for the vehicle's recent history."""
+    """Get map-matched data from Google Roads API for the vehicle's recent history."""
     history = await get_location_history(db, vehicle.id, limit=5)
     history.reverse() # oldest first
     
@@ -238,24 +238,29 @@ async def get_matched_location_data(db: AsyncSession, vehicle: Vehicle, new_loca
         return {}
 
     coords = [(loc.longitude, loc.latitude) for loc in filtered]
-    timestamps = [int(loc.timestamp.timestamp()) for loc in filtered]
 
-    match_data = await get_map_match(coords, timestamps=timestamps)
-    if not match_data or "matchings" not in match_data or not match_data["matchings"]:
+    match_data = await snap_to_roads(coords)
+    if not match_data or "snappedPoints" not in match_data:
         return {}
 
-    matching = match_data["matchings"][0]
-    geom = matching.get("geometry", {})
-    
-    tracepoints = match_data.get("tracepoints", [])
-    valid_traces = [tp for tp in tracepoints if tp is not None]
-    if not valid_traces:
+    snapped_points = match_data.get("snappedPoints", [])
+    if not snapped_points:
         return {}
+
+    # Construct GeoJSON-like geometry for the frontend polyline
+    geom_coords = []
+    for pt in snapped_points:
+        lat = pt["location"]["latitude"]
+        lon = pt["location"]["longitude"]
+        geom_coords.append((lon, lat))
         
-    last_trace = valid_traces[-1]
-    matched_lon, matched_lat = last_trace["location"]
+    geom = {"coordinates": geom_coords}
 
-    geom_coords = geom.get("coordinates", [])
+    # The latest matched location is the last point in the snapped path
+    last_point = snapped_points[-1]["location"]
+    matched_lat = last_point["latitude"]
+    matched_lon = last_point["longitude"]
+
     heading = 0.0
     if len(geom_coords) >= 2:
         lon1, lat1 = geom_coords[-2]

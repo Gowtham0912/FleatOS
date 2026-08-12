@@ -47,6 +47,8 @@ class LocationCreate(BaseModel):
     device_id: str = Field(..., min_length=1, max_length=64, description="Unique device identifier")
     latitude: float = Field(..., ge=-90.0, le=90.0, description="GPS latitude")
     longitude: float = Field(..., ge=-180.0, le=180.0, description="GPS longitude")
+    speed: float | None = Field(default=None, description="GPS speed in m/s")
+    heading: float | None = Field(default=None, description="GPS bearing in degrees")
     pairing_code: str | None = Field(default=None, description="Optional private pairing code (TRK-XXXX)")
     account_code: str | None = Field(default=None, description="Optional account code (FLT-XXXXXX) for new pairing flow")
     timestamp: datetime | None = Field(
@@ -157,6 +159,8 @@ class LocationBroadcast(BaseModel):
     vehicle_name: str
     latitude: float
     longitude: float
+    speed: float | None = None
+    heading: float | None = None
     timestamp: datetime
     pairing_code: str | None = None
     share_code: str | None = None
