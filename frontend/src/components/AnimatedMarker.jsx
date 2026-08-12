@@ -58,18 +58,13 @@ const vehicleIcon = (isSelected) =>
         "></div>
         <div class="vehicle-icon-inner" style="
           position: relative;
-          width: ${isSelected ? '22px' : '18px'};
-          height: ${isSelected ? '22px' : '18px'};
-          border-radius: 4px;
+          width: ${isSelected ? '18px' : '14px'};
+          height: ${isSelected ? '18px' : '14px'};
+          border-radius: 50%;
           background: ${isSelected ? '#2563EB' : '#0284C7'};
           border: 2px solid #FFFFFF;
           box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-          will-change: transform;
         ">
-           <svg viewBox="0 0 24 24" fill="white" style="width:100%; height:100%; padding: 2px;">
-             <path d="M12 2L2 22L12 18L22 22L12 2Z" />
-           </svg>
-        </div>
       </div>
     `,
     iconSize: [36, 36],

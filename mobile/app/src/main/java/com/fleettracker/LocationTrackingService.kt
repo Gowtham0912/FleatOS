@@ -38,8 +38,8 @@ class LocationTrackingService : Service() {
         private const val TAG = "FleetTracker"
         private const val NOTIFICATION_ID = 1001
         private const val CHANNEL_ID = "fleet_tracker_channel"
-        private const val LOCATION_INTERVAL_MS = 5_000L     // 5 seconds
-        private const val LOCATION_FASTEST_MS  = 3_000L     // never faster than 3 s
+        private const val LOCATION_INTERVAL_MS = 1_000L     // 1 second
+        private const val LOCATION_FASTEST_MS  = 1_000L     // never faster than 1 s
 
         // Broadcast action — MainActivity listens for this to update the UI
         const val ACTION_LOCATION_UPDATE = "com.fleettracker.LOCATION_UPDATE"

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <title>FleetOS — GPS Sender</title>
+  <title>FleetOS — GPS Simulator</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -268,7 +268,7 @@
     <div class="logo-icon">📡</div>
     <div>
       <div class="logo-text">FleetOS</div>
-      <div class="logo-sub">GPS SENDER</div>
+      <div class="logo-sub">GPS SIMULATOR</div>
     </div>
   </div>
 
@@ -569,42 +569,38 @@
     }
   }
 
-  function startTracking() {
-    if (!navigator.geolocation) {
-      setStatus('error', 'GPS not supported');
-      return;
-    }
+  let simLat = 20.0;
+  let simLng = 78.0;
 
+  function startTracking() {
     isTracking = true;
-    setStatus('tracking', 'Acquiring high-precision GPS…');
+    setStatus('tracking', 'Simulating GPS movement…');
     updateBtn();
 
-    // Start watchPosition for continuous hardware GPS updates
-    watchId = navigator.geolocation.watchPosition(
-      handleLocationUpdate,
-      handleLocationError,
-      { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
-    );
-
-    // Also send periodic heartbeat every 2s
     intervalId = setInterval(() => {
-      if (lastPos) postGPS(lastPos);
+      simLat += 0.0001;
+      simLng += 0.00005;
+
+      const mockPos = {
+        coords: {
+          latitude: simLat,
+          longitude: simLng,
+          accuracy: 5
+        }
+      };
+      handleLocationUpdate(mockPos);
     }, INTERVAL_MS);
   }
 
   function stopTracking() {
     isTracking = false;
-    if (watchId !== null) {
-      navigator.geolocation.clearWatch(watchId);
-      watchId = null;
-    }
     if (intervalId !== null) {
       clearInterval(intervalId);
       intervalId = null;
     }
     setStatus('idle', 'Stopped');
     updateBtn();
-    log('info', 'Tracking stopped.');
+    log('info', 'Simulation stopped.');
   }
 
   // ── Handle GPS Hardware Update ─────────────────────────────────────────────
@@ -623,20 +619,8 @@
   }
 
   function handleLocationUpdate(pos) {
-    if (lastPos) {
-      const dist = calculateDistance(
-        lastPos.coords.latitude, lastPos.coords.longitude,
-        pos.coords.latitude, pos.coords.longitude
-      );
-      if (dist < 5) return; // Ignore movements under 5 meters (GPS drift)
-    }
-
     lastPos = pos;
-    const now = Date.now();
-    // Post immediately if 2s passed since last post
-    if (now - lastPostTime >= INTERVAL_MS) {
-      postGPS(pos);
-    }
+    postGPS(pos);
   }
 
   function handleLocationError(err) {

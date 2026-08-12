@@ -72,6 +72,11 @@ def create_app() -> FastAPI:
         """Serve the phone GPS sender page at /gps"""
         return FileResponse(os.path.join(STATIC_DIR, "gps_sender.html"))
 
+    @app.get("/simulator", include_in_schema=False)
+    async def simulator_page():
+        """Serve the GPS simulator page at /simulator"""
+        return FileResponse(os.path.join(STATIC_DIR, "simulator.html"))
+
     @app.get("/share/{share_code}", include_in_schema=False)
     async def share_viewer_page(share_code: str):
         """Serve the public share tracking page at /share/{share_code}"""
