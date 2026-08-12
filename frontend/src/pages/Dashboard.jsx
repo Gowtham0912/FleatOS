@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { Map, List } from 'lucide-react'
-import FleetGoogleMap from '../components/FleetGoogleMap'
+import FleetMap from '../components/FleetMap'
 import VehicleList from '../components/VehicleList'
 import TopBar from '../components/TopBar'
 import { deleteVehicle, deleteUnlinkedVehicles } from '../api/fleetApi'
@@ -94,7 +94,7 @@ export default function Dashboard({ vehicles, locations, isLoading, lastMessage,
       <div className="flex flex-1 min-h-0 relative overflow-hidden">
         {/* ── Map ──────────────────────────────────────────────────────── */}
         <div className={`flex-1 relative ${activeTab === 'map' ? 'block' : 'hidden md:block'}`}>
-          <FleetGoogleMap
+          <FleetMap
             vehicles={vehicles}
             locations={locations}
             selectedVehicle={selectedVehicle}

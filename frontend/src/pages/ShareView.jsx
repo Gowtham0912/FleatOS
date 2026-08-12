@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { Navigation, Truck, MapPin, Clock, AlertCircle } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
-import FleetGoogleMap from '../components/FleetGoogleMap'
+import FleetMap from '../components/FleetMap'
 import { fetchSharedVehicle } from '../api/fleetApi'
 
 export default function ShareView() {
@@ -81,7 +81,7 @@ export default function ShareView() {
           </div>
         ) : (
           <>
-            <FleetGoogleMap
+            <FleetMap
               vehicles={vehicle ? [vehicle] : []}
               locations={locations}
               selectedVehicle={vehicle}

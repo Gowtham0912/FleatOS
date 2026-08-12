@@ -22,6 +22,54 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* ── Leaflet map standard clean theme ───────────────────────────────────── */
+.leaflet-container {
+  background: #E2E8F0 !important;
+  font-family: 'Inter', sans-serif;
+  z-index: 0 !important;
+}
+
+/* Standard clean tile pane (no dark invert filter) */
+.leaflet-tile-pane {
+  filter: none !important;
+}
+
+/* Standard clean overlay pane */
+.leaflet-overlay-pane,
+.leaflet-marker-pane,
+.leaflet-shadow-pane,
+.leaflet-popup-pane {
+  filter: none !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: #FFFFFF;
+  color: #0F172A;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.leaflet-popup-tip {
+  background: #FFFFFF;
+}
+
+.leaflet-popup-content {
+  margin: 12px 16px;
+  font-family: 'Inter', sans-serif;
+}
+
+.leaflet-control-zoom a {
+  background: #FFFFFF !important;
+  color: #334155 !important;
+  border-color: #CBD5E1 !important;
+  border-radius: 6px !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: #F1F5F9 !important;
+  color: #0F172A !important;
+}
 
 /* ── Scrollbar ──────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; }
