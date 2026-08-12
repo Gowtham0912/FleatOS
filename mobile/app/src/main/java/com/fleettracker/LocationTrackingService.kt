@@ -118,6 +118,7 @@ class LocationTrackingService : Service() {
             LOCATION_INTERVAL_MS
         )
             .setMinUpdateIntervalMillis(LOCATION_FASTEST_MS)
+            .setMinUpdateDistanceMeters(5f)
             .build()
 
         fusedClient.requestLocationUpdates(request, locationCallback, Looper.getMainLooper())
