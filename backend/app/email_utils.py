@@ -7,9 +7,8 @@ logger = logging.getLogger(__name__)
 
 def send_otp_email(to_email: str, otp: str, purpose: str) -> bool:
     """Send an OTP code to the provided email via SMTP."""
-    # Hardcoded credentials as requested
-    smtp_email = "sgg34877@gmail.com"
-    smtp_app_password = "nhfe qkma tfru lywz"
+    smtp_email = settings.SMTP_EMAIL
+    smtp_app_password = settings.SMTP_APP_PASSWORD
     
     msg = EmailMessage()
     msg['From'] = smtp_email
