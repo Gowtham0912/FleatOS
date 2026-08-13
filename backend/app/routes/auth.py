@@ -63,6 +63,21 @@ async def register(payload: UserRegister, db: AsyncSession = Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email address is already registered.",
         )
+        
+    # Verify OTP
+    res_otp = await db.execute(
+        select(OTPCode)
+        .where(OTPCode.email == email, OTPCode.purpose == "register", OTPCode.is_used == False)
+        .order_by(OTPCode.created_at.desc())
+        .limit(1)
+    )
+    otp = res_otp.scalar_one_or_none()
+    
+    if not otp or otp.code != payload.code or otp.expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP.")
+    
+    # Mark as used
+    otp.is_used = True
 
     # Create new user
     user = User(
@@ -102,14 +117,21 @@ async def get_me(user: User = Depends(require_current_user)):
     return UserResponse.model_validate(user)
 
 
-async def generate_and_send_otp(email: str, purpose: str, db: AsyncSession):
+async def generate_and_send_otp(email: str, purpose: str, db: AsyncSession, check_user_exists: bool = True):
     """Helper to generate a 6-digit OTP, store it, and send via email."""
-    # Check if user exists first
+    # Check if user exists
     res = await db.execute(select(User).where(User.email == email))
     user = res.scalar_one_or_none()
-    if not user:
-        # Don't reveal user existence, just return success
+    
+    if check_user_exists and not user:
+        # Don't reveal user existence for login/reset, just return success
         return {"message": "If that email is in our system, an OTP was sent."}
+    
+    if not check_user_exists and user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email address is already registered.",
+        )
 
     # Generate 6 digit code
     code = f"{random.randint(0, 999999):06d}"
@@ -126,10 +148,16 @@ async def generate_and_send_otp(email: str, purpose: str, db: AsyncSession):
     return {"message": "OTP sent to email."}
 
 
+@router.post("/register/otp/request")
+async def register_otp_request(payload: OTPRequest, db: AsyncSession = Depends(get_db)):
+    """Request an OTP to verify email before registration."""
+    return await generate_and_send_otp(payload.email.lower().strip(), "register", db, check_user_exists=False)
+
+
 @router.post("/forgot-password/request")
 async def forgot_password_request(payload: OTPRequest, db: AsyncSession = Depends(get_db)):
     """Request a password reset OTP."""
-    return await generate_and_send_otp(payload.email.lower().strip(), "reset", db)
+    return await generate_and_send_otp(payload.email.lower().strip(), "reset", db, check_user_exists=True)
 
 
 @router.post("/forgot-password/reset")

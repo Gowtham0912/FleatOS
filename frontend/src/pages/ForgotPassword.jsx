@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Mail, Lock, Key, AlertCircle, CheckCircle } from 'lucide-react'
+import { Mail, Lock, AlertCircle, CheckCircle } from 'lucide-react'
 import { requestPasswordReset, resetPassword } from '../api/fleetApi'
+import OTPInput from '../components/OTPInput'
 
 export default function ForgotPassword() {
-  const [step, setStep] = useState(1) // 1: Request OTP, 2: Reset Password
+  const [step, setStep] = useState(1) // 1: Email, 2: OTP, 3: New Passwords
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
   const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -31,12 +33,28 @@ export default function ForgotPassword() {
     }
   }
 
+  const handleOtpNext = (e) => {
+    e.preventDefault()
+    if (code.length === 6) {
+      setStep(3)
+      setError(null)
+      setSuccess(null)
+    } else {
+      setError("Please enter the full 6-digit code.")
+    }
+  }
+
   const handleResetPassword = async (e) => {
     e.preventDefault()
     setError(null)
     setSuccess(null)
-    setIsSubmitting(true)
     
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match.")
+      return
+    }
+
+    setIsSubmitting(true)
     try {
       await resetPassword(email, code, newPassword)
       setSuccess('Password has been successfully reset.')
@@ -59,7 +77,9 @@ export default function ForgotPassword() {
           </div>
           <h1 className="text-xl font-bold text-slate-900">Reset Password</h1>
           <p className="text-xs text-slate-500 mt-1">
-            {step === 1 ? 'Enter your email to receive a reset code' : 'Enter the code and your new password'}
+            {step === 1 && 'Enter your email to receive a reset code'}
+            {step === 2 && 'Enter the 6-digit code sent to your email'}
+            {step === 3 && 'Create a new secure password'}
           </p>
         </div>
 
@@ -77,7 +97,7 @@ export default function ForgotPassword() {
           </div>
         )}
 
-        {step === 1 ? (
+        {step === 1 && (
           <form onSubmit={handleRequestOtp} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">Email address</label>
@@ -102,37 +122,36 @@ export default function ForgotPassword() {
               {isSubmitting ? 'Sending…' : 'Send Reset Code'}
             </button>
           </form>
-        ) : (
-          <form onSubmit={handleResetPassword} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Email address</label>
-              <div className="relative">
-                <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="email"
-                  disabled
-                  value={email}
-                  className="w-full bg-slate-100 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-500"
-                />
-              </div>
+        )}
+
+        {step === 2 && (
+          <form onSubmit={handleOtpNext} className="space-y-4">
+            <div className="text-center text-sm font-medium text-slate-700 mb-4">
+              Sent to: <span className="font-bold text-slate-900">{email}</span>
             </div>
             
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">6-digit Reset Code</label>
-              <div className="relative">
-                <Key size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  required
-                  maxLength={6}
-                  placeholder="123456"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors tracking-widest font-mono"
-                />
-              </div>
-            </div>
+            <OTPInput value={code} onChange={setCode} />
 
+            <button
+              type="submit"
+              disabled={code.length !== 6}
+              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50 mt-4"
+            >
+              Next
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => setStep(1)}
+              className="w-full py-2 text-xs text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
+            >
+              Back to request code
+            </button>
+          </form>
+        )}
+
+        {step === 3 && (
+          <form onSubmit={handleResetPassword} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">New Password</label>
               <div className="relative">
@@ -141,7 +160,7 @@ export default function ForgotPassword() {
                   type="password"
                   required
                   minLength={6}
-                  placeholder="••••••••"
+                  placeholder="Minimum 6 characters"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
@@ -149,9 +168,25 @@ export default function ForgotPassword() {
               </div>
             </div>
 
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Re-enter Password</label>
+              <div className="relative">
+                <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  placeholder="Minimum 6 characters"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
+                />
+              </div>
+            </div>
+
             <button
               type="submit"
-              disabled={isSubmitting || code.length !== 6 || newPassword.length < 6}
+              disabled={isSubmitting || newPassword.length < 6}
               className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50"
             >
               {isSubmitting ? 'Resetting…' : 'Reset Password'}
@@ -159,10 +194,10 @@ export default function ForgotPassword() {
             
             <button
               type="button"
-              onClick={() => setStep(1)}
+              onClick={() => setStep(2)}
               className="w-full py-2 text-xs text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
             >
-              Back to Request Code
+              Back to enter code
             </button>
           </form>
         )}

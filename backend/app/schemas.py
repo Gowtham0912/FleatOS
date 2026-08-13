@@ -13,6 +13,7 @@ class UserRegister(BaseModel):
     email: str = Field(..., description="User email address")
     password: str = Field(..., min_length=6, description="User password (min 6 chars)")
     full_name: str = Field(default="Fleet Owner", description="Display name")
+    code: str = Field(..., min_length=6, max_length=6, description="6-digit OTP code")
 
 
 class UserLogin(BaseModel):

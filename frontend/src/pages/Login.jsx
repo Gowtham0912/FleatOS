@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Lock, Mail, AlertCircle, Key, CheckCircle } from 'lucide-react'
+import { Lock, Mail, AlertCircle, CheckCircle } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { requestOtpLogin, verifyOtpLogin } from '../api/fleetApi'
+import OTPInput from '../components/OTPInput'
 
 export default function Login() {
   const [mode, setMode] = useState('password') // 'password' or 'otp'
@@ -14,7 +15,7 @@ export default function Login() {
   const [success, setSuccess] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   
-  const { login, setTokenAndUser } = useAuth() // Need to add setTokenAndUser to AuthContext or handle it here
+  const { login } = useAuth()
   const navigate = useNavigate()
 
   const handlePasswordLogin = async (e) => {
@@ -53,12 +54,7 @@ export default function Login() {
     setIsSubmitting(true)
     try {
       const data = await verifyOtpLogin(email, code)
-      // Call a generic login success handler from context, but since login() takes email/password,
-      // we might need a direct setter. Let's assume we can just save token and redirect.
       localStorage.setItem('fleet_token', data.access_token)
-      // To properly update AuthContext, we ideally need a way to set user.
-      // But a page reload or navigate to '/' will trigger useEffect in AuthContext to fetchCurrentUser.
-      // Let's reload the page to be safe and let AuthContext handle it.
       window.location.href = '/'
     } catch (err) {
       setError(err.message || 'Invalid OTP')
@@ -177,26 +173,16 @@ export default function Login() {
 
         {mode === 'otp' && otpStep === 2 && (
           <form onSubmit={handleVerifyOtp} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">6-digit Login Code</label>
-              <div className="relative">
-                <Key size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  required
-                  maxLength={6}
-                  placeholder="123456"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors tracking-widest font-mono"
-                />
-              </div>
+            <div className="text-center text-sm font-medium text-slate-700 mb-4">
+              Enter the 6-digit code sent to<br/> <span className="font-bold text-slate-900">{email}</span>
             </div>
+            
+            <OTPInput value={code} onChange={setCode} />
             
             <button
               type="submit"
               disabled={isSubmitting || code.length !== 6}
-              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50 mt-4"
             >
               {isSubmitting ? 'Verifying…' : 'Verify & Sign In'}
             </button>

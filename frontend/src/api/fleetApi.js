@@ -17,13 +17,29 @@ function getAuthHeaders() {
 }
 
 /**
+ * Request an OTP for registration.
+ */
+export async function requestRegisterOtp(email) {
+  const res = await fetch(`${BASE_URL}/auth/register/otp/request`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || 'Failed to request registration OTP')
+  }
+  return res.json()
+}
+
+/**
  * Register a new user account.
  */
-export async function registerUser(email, password, fullName) {
+export async function registerUser(email, password, fullName, code) {
   const res = await fetch(`${BASE_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password, full_name: fullName }),
+    body: JSON.stringify({ email, password, full_name: fullName, code }),
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
