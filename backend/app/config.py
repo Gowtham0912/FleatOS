@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     # ── Email Settings ────────────────────────────────────────────────────────
     SMTP_EMAIL: str = ""          # e.g., "your_email@gmail.com"
     SMTP_APP_PASSWORD: str = ""   # 16-character App Password
+    RESEND_API_KEY: str = ""      # Resend API Key for Render deployment
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -1,31 +1,41 @@
-import smtplib
-from email.message import EmailMessage
+import httpx
 import logging
 from app.config import settings
 
 logger = logging.getLogger(__name__)
 
 def send_otp_email(to_email: str, otp: str, purpose: str) -> bool:
-    """Send an OTP code to the provided email via SMTP."""
-    smtp_email = settings.SMTP_EMAIL
-    smtp_app_password = settings.SMTP_APP_PASSWORD
-    
-    msg = EmailMessage()
-    msg['From'] = smtp_email
-    msg['To'] = to_email
+    """Send an OTP code to the provided email via Resend API."""
+    resend_api_key = settings.RESEND_API_KEY
+    if not resend_api_key:
+        logger.warning("RESEND_API_KEY is not set. Cannot send email.")
+        return False
+        
+    # Use onboarding@resend.dev for testing if a custom domain isn't verified yet
+    sender = "onboarding@resend.dev"
     
     if purpose == 'reset':
-        msg['Subject'] = 'Fleet Tracker - Password Reset OTP'
-        msg.set_content(f"Your password reset OTP code is: {otp}\n\nThis code will expire in 10 minutes.")
+        subject = 'Fleet Tracker - Password Reset OTP'
+        html = f"<p>Your password reset OTP code is: <strong>{otp}</strong></p><p>This code will expire in 10 minutes.</p>"
     else:
-        msg['Subject'] = 'Fleet Tracker - Login OTP'
-        msg.set_content(f"Your login OTP code is: {otp}\n\nThis code will expire in 10 minutes.")
+        subject = 'Fleet Tracker - Login OTP'
+        html = f"<p>Your login OTP code is: <strong>{otp}</strong></p><p>This code will expire in 10 minutes.</p>"
         
     try:
-        # Assuming Gmail SMTP for this setup based on user request
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-            smtp.login(smtp_email, smtp_app_password)
-            smtp.send_message(msg)
+        response = httpx.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {resend_api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "from": sender,
+                "to": [to_email],
+                "subject": subject,
+                "html": html
+            }
+        )
+        response.raise_for_status()
         return True
     except Exception as e:
         logger.error(f"Failed to send email to {to_email}: {e}")
