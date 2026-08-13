@@ -8,9 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.database import get_db
-from app.models import User
-from app.schemas import UserRegister, UserLogin, UserResponse, TokenResponse
+from app.models import User, OTPCode
+from app.schemas import UserRegister, UserLogin, UserResponse, TokenResponse, OTPRequest, OTPVerifyLogin, OTPVerifyReset
 from app.auth_utils import hash_password, verify_password, create_access_token, decode_access_token
+from app.email_utils import send_otp_email
+import random
+from datetime import datetime, timedelta, timezone
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -97,3 +100,101 @@ async def login(payload: UserLogin, db: AsyncSession = Depends(get_db)):
 async def get_me(user: User = Depends(require_current_user)):
     """Get current logged-in user profile."""
     return UserResponse.model_validate(user)
+
+
+async def generate_and_send_otp(email: str, purpose: str, db: AsyncSession):
+    """Helper to generate a 6-digit OTP, store it, and send via email."""
+    # Check if user exists first
+    res = await db.execute(select(User).where(User.email == email))
+    user = res.scalar_one_or_none()
+    if not user:
+        # Don't reveal user existence, just return success
+        return {"message": "If that email is in our system, an OTP was sent."}
+
+    # Generate 6 digit code
+    code = f"{random.randint(0, 999999):06d}"
+    
+    # Store in DB
+    expires = datetime.now(timezone.utc) + timedelta(minutes=10)
+    otp = OTPCode(email=email, code=code, purpose=purpose, expires_at=expires)
+    db.add(otp)
+    await db.commit()
+
+    # Send email
+    send_otp_email(email, code, purpose)
+    
+    return {"message": "OTP sent to email."}
+
+
+@router.post("/forgot-password/request")
+async def forgot_password_request(payload: OTPRequest, db: AsyncSession = Depends(get_db)):
+    """Request a password reset OTP."""
+    return await generate_and_send_otp(payload.email.lower().strip(), "reset", db)
+
+
+@router.post("/forgot-password/reset")
+async def forgot_password_reset(payload: OTPVerifyReset, db: AsyncSession = Depends(get_db)):
+    """Verify OTP and set new password."""
+    email = payload.email.lower().strip()
+    
+    # Find latest unexpired, unused OTP for this email and purpose
+    res = await db.execute(
+        select(OTPCode)
+        .where(OTPCode.email == email, OTPCode.purpose == "reset", OTPCode.is_used == False)
+        .order_by(OTPCode.created_at.desc())
+        .limit(1)
+    )
+    otp = res.scalar_one_or_none()
+    
+    if not otp or otp.code != payload.code or otp.expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP.")
+    
+    # Mark as used
+    otp.is_used = True
+    
+    # Update password
+    res_user = await db.execute(select(User).where(User.email == email))
+    user = res_user.scalar_one_or_none()
+    if user:
+        user.password_hash = hash_password(payload.new_password)
+    
+    await db.commit()
+    return {"message": "Password successfully reset."}
+
+
+@router.post("/login/otp/request")
+async def login_otp_request(payload: OTPRequest, db: AsyncSession = Depends(get_db)):
+    """Request an OTP for passwordless login."""
+    return await generate_and_send_otp(payload.email.lower().strip(), "login", db)
+
+
+@router.post("/login/otp/verify", response_model=TokenResponse)
+async def login_otp_verify(payload: OTPVerifyLogin, db: AsyncSession = Depends(get_db)):
+    """Verify login OTP and return token."""
+    email = payload.email.lower().strip()
+    
+    # Find latest unexpired, unused OTP
+    res = await db.execute(
+        select(OTPCode)
+        .where(OTPCode.email == email, OTPCode.purpose == "login", OTPCode.is_used == False)
+        .order_by(OTPCode.created_at.desc())
+        .limit(1)
+    )
+    otp = res.scalar_one_or_none()
+    
+    if not otp or otp.code != payload.code or otp.expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP.")
+    
+    otp.is_used = True
+    
+    # Find user
+    res_user = await db.execute(select(User).where(User.email == email))
+    user = res_user.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+        
+    await db.commit()
+    
+    token = create_access_token({"sub": str(user.id), "email": user.email})
+    return TokenResponse(access_token=token, user=UserResponse.model_validate(user))

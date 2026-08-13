@@ -38,8 +38,8 @@ export default function Sidebar({ isConnected, vehicleCount, isOpen, onClose }) 
       {/* ── Logo & Header ────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0 shadow-sm">
-            <Navigation size={16} className="text-white" />
+          <div className="w-8 h-8 shrink-0 flex items-center justify-center">
+            <img src="/logo.png" alt="Fleet OS" className="w-full h-full object-contain" />
           </div>
           <div>
             <p className="text-sm font-bold text-slate-900 leading-none">Fleet Tracker</p>

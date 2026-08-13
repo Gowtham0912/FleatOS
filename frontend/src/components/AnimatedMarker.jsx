@@ -166,16 +166,27 @@ export default function AnimatedMarker({
     
     // Add geometry points if they are far enough from our current pos
     if (geom.length > 1) {
-      // Skip the first geometry point if it's very close to our current pos
-      for (let i = 1; i < geom.length; i++) {
+      let closestIdx = 0
+      let minDt = Infinity
+      for (let i = 0; i < geom.length; i++) {
+        const d = getDistance(currentPos.current, geom[i])
+        if (d < minDt) {
+          minDt = d
+          closestIdx = i
+        }
+      }
+      
+      for (let i = closestIdx + 1; i < geom.length; i++) {
         route.push(geom[i])
       }
-    } else {
-      route.push({ lat: newLat, lng: newLng })
     }
     
-    // Force the exact target as the last point
-    route[route.length - 1] = { lat: newLat, lng: newLng }
+    if (route.length === 1) {
+      route.push({ lat: newLat, lng: newLng })
+    } else {
+      // Force the exact target as the last point
+      route[route.length - 1] = { lat: newLat, lng: newLng }
+    }
 
     // Precalculate distances
     let totalDist = 0
@@ -254,32 +265,10 @@ export default function AnimatedMarker({
           
           // Also orient slightly to the current segment heading if we want, but simple lerp to target is smoother.
         } else {
-          // Prediction phase
-          const overtime = elapsed - duration
-          if (overtime > PREDICTION_TIMEOUT_MS) {
-            // Stop predicting, vehicle is stale
-            lat = state.route[state.route.length - 1].lat
-            lng = state.route[state.route.length - 1].lng
-            rot = state.targetRot
-          } else {
-            // Predict forward based on speed and heading
-            const lastPt = state.route[state.route.length - 1]
-            const dist = state.speed * (overtime / 1000)
-            const brng = state.targetRot * Math.PI / 180
-            
-            const R = 6371e3
-            const lat1 = lastPt.lat * Math.PI / 180
-            const lon1 = lastPt.lng * Math.PI / 180
-            
-            const lat2 = Math.asin(Math.sin(lat1) * Math.cos(dist / R) +
-              Math.cos(lat1) * Math.sin(dist / R) * Math.cos(brng))
-            const lon2 = lon1 + Math.atan2(Math.sin(brng) * Math.sin(dist / R) * Math.cos(lat1),
-              Math.cos(dist / R) - Math.sin(lat1) * Math.sin(lat2))
-              
-            lat = lat2 * 180 / Math.PI
-            lng = lon2 * 180 / Math.PI
-            rot = state.targetRot
-          }
+          // Animation finished, hold at final position (prevents overshoot/rubber-banding)
+          lat = state.route[state.route.length - 1].lat
+          lng = state.route[state.route.length - 1].lng
+          rot = state.targetRot
         }
 
         currentPos.current = { lat, lng }

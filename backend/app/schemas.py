@@ -21,6 +21,24 @@ class UserLogin(BaseModel):
     password: str
 
 
+class OTPRequest(BaseModel):
+    """Payload to request an OTP (for login or password reset)."""
+    email: str = Field(..., description="User email address")
+
+
+class OTPVerifyLogin(BaseModel):
+    """Payload to verify an OTP for login."""
+    email: str
+    code: str = Field(..., min_length=6, max_length=6, description="6-digit OTP code")
+
+
+class OTPVerifyReset(BaseModel):
+    """Payload to verify an OTP for password reset."""
+    email: str
+    code: str = Field(..., min_length=6, max_length=6, description="6-digit OTP code")
+    new_password: str = Field(..., min_length=6, description="New user password (min 6 chars)")
+
+
 class UserResponse(BaseModel):
     """User profile response."""
     id: int

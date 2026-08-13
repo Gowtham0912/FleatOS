@@ -215,3 +215,56 @@ export async function rejectPairingRequest(requestId) {
   return res.json()
 }
 
+// ── OTP & Password Reset API ───────────────────────────────────────────────
+
+export async function requestPasswordReset(email) {
+  const res = await fetch(`${BASE_URL}/auth/forgot-password/request`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || 'Failed to request password reset')
+  }
+  return res.json()
+}
+
+export async function resetPassword(email, code, newPassword) {
+  const res = await fetch(`${BASE_URL}/auth/forgot-password/reset`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, code, new_password: newPassword }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || 'Failed to reset password')
+  }
+  return res.json()
+}
+
+export async function requestOtpLogin(email) {
+  const res = await fetch(`${BASE_URL}/auth/login/otp/request`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || 'Failed to request OTP login')
+  }
+  return res.json()
+}
+
+export async function verifyOtpLogin(email, code) {
+  const res = await fetch(`${BASE_URL}/auth/login/otp/verify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, code }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || 'Failed to verify login OTP')
+  }
+  return res.json()
+}

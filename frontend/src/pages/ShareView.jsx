@@ -44,8 +44,8 @@ export default function ShareView() {
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-3.5 bg-white border-b border-slate-200 shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold shadow-sm">
-            <Navigation size={16} />
+          <div className="w-8 h-8 shrink-0 flex items-center justify-center">
+            <img src="/logo.png" alt="Fleet OS" className="w-full h-full object-contain" />
           </div>
           <div>
             <h1 className="text-sm font-bold text-slate-900">

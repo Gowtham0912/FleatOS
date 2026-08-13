@@ -31,8 +31,8 @@ export default function Register() {
       <div className="bg-white border border-slate-200 rounded-xl shadow-sm max-w-md w-full p-8">
         {/* Header */}
         <div className="flex flex-col items-center text-center mb-6">
-          <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white mb-3 shadow-sm">
-            <Navigation size={20} />
+          <div className="w-16 h-16 mb-2">
+            <img src="/logo.png" alt="Fleet OS" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-xl font-bold text-slate-900">Create your Account</h1>
           <p className="text-xs text-slate-500 mt-1">Start tracking your private vehicles live</p>

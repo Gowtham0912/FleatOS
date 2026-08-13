@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     MAP_MATCHING_ENABLED: bool = True
     GPS_OUTLIER_THRESHOLD_KMH: float = 200.0
 
+    # ── Email Settings ────────────────────────────────────────────────────────
+    SMTP_EMAIL: str = ""          # e.g., "your_email@gmail.com"
+    SMTP_APP_PASSWORD: str = ""   # 16-character App Password
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

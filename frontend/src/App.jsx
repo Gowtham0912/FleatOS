@@ -6,6 +6,7 @@ import Vehicles from './pages/Vehicles'
 import PairingRequests from './pages/PairingRequests'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import ForgotPassword from './pages/ForgotPassword'
 import ShareView from './pages/ShareView'
 import { useWebSocket } from './hooks/useWebSocket'
 import { useVehicles } from './hooks/useVehicles'
@@ -29,6 +30,7 @@ export default function App() {
       {/* Auth Pages */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
 
       {/* Main Dashboard Layout */}
       <Route
