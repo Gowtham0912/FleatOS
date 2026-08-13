@@ -113,7 +113,7 @@ export default function AnimatedMarker({
 
     if (state.lastPingTime) {
       const pingInterval = now - state.lastPingTime
-      state.duration = Math.min(Math.max(pingInterval, 1000), 5000)
+      state.duration = Math.min(Math.max(pingInterval, 1000), 15000)
     } else {
       state.duration = 2000
     }

@@ -362,6 +362,12 @@
     Sends GPS to backend every <span>1 second</span>
   </div>
 
+  <!-- Warning about minimizing -->
+  <div id="backgroundWarning" class="hidden" style="font-size: 11px; color: #DC2626; text-align: center; margin-top: 12px; padding: 10px; background: #FEF2F2; border-radius: 8px; border: 1px solid #FECACA;">
+    ⚠️ <strong>Keep this tab open!</strong><br>
+    Mobile browsers pause GPS when minimized or when the screen locks. For true background tracking, please use the native FleetOS Android app.
+  </div>
+
 <script>
   // ── Config ─────────────────────────────────────────────────────────────────
   const BACKEND_URL  = window.location.origin;
@@ -378,6 +384,37 @@
   let accountCode  = '';
   let lastPos      = null;
   let lastPostTime = 0;
+  let wakeLock     = null;
+
+  // ── Wake Lock ──────────────────────────────────────────────────────────────
+  async function requestWakeLock() {
+    if ('wakeLock' in navigator) {
+      try {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => {
+          log('warn', 'Screen Wake Lock released');
+        });
+        log('info', 'Screen Wake Lock acquired (keeps screen on)');
+      } catch (err) {
+        log('err', `Wake Lock error: ${err.message}`);
+      }
+    }
+  }
+
+  function releaseWakeLock() {
+    if (wakeLock !== null) {
+      wakeLock.release().then(() => {
+        wakeLock = null;
+      });
+    }
+  }
+
+  // Re-acquire on visibility change if we are still tracking
+  document.addEventListener('visibilitychange', async () => {
+    if (wakeLock !== null && document.visibilityState === 'visible' && isTracking) {
+      requestWakeLock();
+    }
+  });
 
   // ── Code & Device ID ───────────────────────────────────────────────────────
   const urlParams = new URLSearchParams(window.location.search);
@@ -531,6 +568,7 @@
     document.getElementById('locationCard').classList.add('hidden');
     document.getElementById('toggleBtn').classList.add('hidden');
     document.getElementById('pingInfo').classList.add('hidden');
+    document.getElementById('backgroundWarning').classList.add('hidden');
     document.getElementById('codeInput').value = '';
     document.getElementById('codeSubmitBtn').disabled = false;
     document.getElementById('codeSubmitBtn').textContent = 'Pair';
@@ -549,6 +587,7 @@
     document.getElementById('locationCard').classList.remove('hidden');
     document.getElementById('toggleBtn').classList.remove('hidden');
     document.getElementById('pingInfo').classList.remove('hidden');
+    document.getElementById('backgroundWarning').classList.remove('hidden');
 
     // Set device ID display
     const nameStr = vehicleName ? ` (${vehicleName})` : '';
@@ -590,6 +629,8 @@
     intervalId = setInterval(() => {
       if (lastPos) postGPS(lastPos);
     }, INTERVAL_MS);
+
+    requestWakeLock();
   }
 
   function stopTracking() {
@@ -605,6 +646,7 @@
     setStatus('idle', 'Stopped');
     updateBtn();
     log('info', 'Tracking stopped.');
+    releaseWakeLock();
   }
 
   // ── Handle GPS Hardware Update ─────────────────────────────────────────────
