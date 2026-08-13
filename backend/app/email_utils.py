@@ -60,7 +60,7 @@ def send_otp_email(to_email: str, otp: str, purpose: str) -> bool:
     
     try:
         response = httpx.post(
-            "https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send",
+            "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
             headers={
                 "Authorization": f"Bearer {access_token}",
                 "Content-Type": "application/json"
@@ -70,6 +70,8 @@ def send_otp_email(to_email: str, otp: str, purpose: str) -> bool:
             },
             timeout=10.0
         )
+        if response.status_code >= 400:
+            logger.error(f"Gmail API Error: {response.text}")
         response.raise_for_status()
         return True
     except Exception as e:
