@@ -56,14 +56,7 @@ const vehicleIcon = (isSelected, vehicleType = 'car') => {
         align-items: center;
         justify-content: center;
       ">
-        <div style="
-          position: absolute;
-          width: ${isSelected ? '36px' : '30px'};
-          height: ${isSelected ? '36px' : '30px'};
-          border-radius: 50%;
-          background: ${isSelected ? 'rgba(37, 99, 235, 0.25)' : 'rgba(2, 132, 199, 0.2)'};
-          animation: pulse 2s infinite;
-        "></div>
+
         <div class="vehicle-icon-inner" style="
           position: relative;
           width: ${isSelected ? '24px' : '20px'};
@@ -157,6 +150,16 @@ export default function AnimatedMarker({
       }
       if (onInterpolatedPosition) {
         onInterpolatedPosition(vehicle.id, newLat, newLng)
+      }
+      return
+    }
+
+    // Anti-jitter: ignore tiny GPS drifting if movement is less than 8 meters
+    const distFromCurrent = getDistance(currentPos.current, { lat: newLat, lng: newLng })
+    if (distFromCurrent < 8) {
+      state.lastPingTime = now
+      if (onInterpolatedPosition) {
+        onInterpolatedPosition(vehicle.id, currentPos.current.lat, currentPos.current.lng)
       }
       return
     }
