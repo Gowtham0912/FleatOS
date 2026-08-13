@@ -71,6 +71,7 @@ export default function FleetMap({ vehicles, locations, locationHistory, selecte
       zoom={initialZoom}
       style={{ width: '100%', height: '100%' }}
       zoomControl={true}
+      attributionControl={false}
     >
       <LayersControl position="topright">
         <LayersControl.BaseLayer checked name="Satellite">

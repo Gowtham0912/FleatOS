@@ -31,8 +31,10 @@ class Settings(BaseSettings):
 
     # ── Email Settings ────────────────────────────────────────────────────────
     SMTP_EMAIL: str = ""          # e.g., "your_email@gmail.com"
-    SMTP_APP_PASSWORD: str = ""   # 16-character App Password
-    RESEND_API_KEY: str = ""      # Resend API Key for Render deployment
+    SMTP_APP_PASSWORD: str = ""   # (Unused, keeping for legacy compatibility)
+    GMAIL_CLIENT_ID: str = ""
+    GMAIL_CLIENT_SECRET: str = ""
+    GMAIL_REFRESH_TOKEN: str = ""
 
     model_config = SettingsConfigDict(
         env_file=".env",
