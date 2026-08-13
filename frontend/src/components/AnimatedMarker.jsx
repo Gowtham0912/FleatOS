@@ -122,22 +122,18 @@ export default function AnimatedMarker({
 
     if (state.lastPingTime) {
       const pingInterval = now - state.lastPingTime
-      state.duration = Math.min(Math.max(pingInterval, 500), 15000)
+      state.duration = Math.min(Math.max(pingInterval, 500), 5000)
     } else {
-      state.duration = 2000
+      state.duration = 1000
     }
     state.lastPingTime = now
     
-    let geom = []
-    if (location.route_geometry && location.route_geometry.coordinates) {
-      geom = location.route_geometry.coordinates.map(c => ({ lat: c[1], lng: c[0] }))
-    }
-
     if (!currentPos.current) {
       // First ping
       currentPos.current = { lat: newLat, lng: newLng }
       state.currentRot = location.heading || 0
-      state.route = []
+      state.startRot = state.currentRot
+      state.targetRot = state.currentRot
       
       const marker = markerRef.current
       if (marker) {
@@ -154,76 +150,25 @@ export default function AnimatedMarker({
       return
     }
 
-    // Anti-jitter: ignore tiny GPS drifting if movement is less than 8 meters
+    // Strictly animate from current position to the new raw GPS position
     const distFromCurrent = getDistance(currentPos.current, { lat: newLat, lng: newLng })
-    if (distFromCurrent < 8) {
+    
+    // Anti-jitter: ignore if perfectly stationary
+    if (distFromCurrent < 2) {
       state.lastPingTime = now
-      if (onInterpolatedPosition) {
-        onInterpolatedPosition(vehicle.id, currentPos.current.lat, currentPos.current.lng)
-      }
       return
     }
 
-    // Build the new route starting from our current interpolated position
-    // to avoid jumps.
-    const route = [ { ...currentPos.current } ]
-    
-    // Add geometry points if they are far enough from our current pos
-    if (geom.length > 1) {
-      let closestIdx = 0
-      let minDt = Infinity
-      for (let i = 0; i < geom.length; i++) {
-        const d = getDistance(currentPos.current, geom[i])
-        if (d < minDt) {
-          minDt = d
-          closestIdx = i
-        }
-      }
-      
-      for (let i = closestIdx + 1; i < geom.length; i++) {
-        route.push(geom[i])
-      }
-    }
-    
-    if (route.length === 1) {
-      route.push({ lat: newLat, lng: newLng })
-    } else {
-      // Force the exact target as the last point
-      route[route.length - 1] = { lat: newLat, lng: newLng }
-    }
-
-    // Precalculate distances
-    let totalDist = 0
-    const segments = []
-    for (let i = 0; i < route.length - 1; i++) {
-      const d = getDistance(route[i], route[i+1])
-      segments.push({ start: route[i], end: route[i+1], dist: d })
-      totalDist += d
-    }
-
-    state.route = route
-    state.totalDist = totalDist
-    state.segments = segments
+    state.startPos = { ...currentPos.current }
+    state.targetPos = { lat: newLat, lng: newLng }
     state.startTime = now
     
-    // Rotation
+    // Calculate heading
     state.startRot = state.currentRot
-    
-    // Calculate expected heading
     let expectedHeading = location.heading
-    if (!expectedHeading && route.length > 1) {
-      expectedHeading = getHeading(route[route.length - 2], route[route.length - 1])
+    if (!expectedHeading) {
+      expectedHeading = getHeading(state.startPos, state.targetPos)
     }
-
-    // Anti-jitter: If the vehicle moved less than 1 meter, it's likely just stationary GPS noise.
-    // Keep the previous heading and set speed to 0 so it doesn't wildly rotate or predict forward.
-    if (totalDist < 1) {
-      expectedHeading = state.startRot
-      state.speed = 0
-    } else {
-      state.speed = location.speed || (totalDist / (state.duration / 1000))
-    }
-
     state.targetRot = getContinuousRotation(state.startRot, expectedHeading || 0)
 
   }, [location, vehicle.id, onInterpolatedPosition])
@@ -239,39 +184,20 @@ export default function AnimatedMarker({
       const marker = markerRef.current
       const state = animState.current
       
-      if (marker && state.startTime !== null && state.route.length > 1) {
+      if (marker && state.startTime !== null && state.targetPos) {
         const elapsed = now - state.startTime
-        const duration = state.duration || 2000
+        const duration = state.duration || 1000
         
         let rawT = elapsed / duration
         let lat, lng, rot
         
         if (rawT <= 1) {
-          // Normal interpolation along route
-          const targetDist = rawT * state.totalDist
-          let distSoFar = 0
-          let currentSeg = state.segments[0]
-          
-          for (const seg of state.segments) {
-            if (distSoFar + seg.dist >= targetDist) {
-              currentSeg = seg
-              break
-            }
-            distSoFar += seg.dist
-          }
-          
-          const segT = currentSeg.dist > 0 ? (targetDist - distSoFar) / currentSeg.dist : 1
-          lat = lerp(currentSeg.start.lat, currentSeg.end.lat, segT)
-          lng = lerp(currentSeg.start.lng, currentSeg.end.lng, segT)
-          
-          // Interpolate rotation
+          lat = lerp(state.startPos.lat, state.targetPos.lat, rawT)
+          lng = lerp(state.startPos.lng, state.targetPos.lng, rawT)
           rot = lerp(state.startRot, state.targetRot, rawT)
-          
-          // Also orient slightly to the current segment heading if we want, but simple lerp to target is smoother.
         } else {
-          // Animation finished, hold at final position (prevents overshoot/rubber-banding)
-          lat = state.route[state.route.length - 1].lat
-          lng = state.route[state.route.length - 1].lng
+          lat = state.targetPos.lat
+          lng = state.targetPos.lng
           rot = state.targetRot
         }
 

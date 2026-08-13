@@ -115,39 +115,9 @@ export default function FleetMap({ vehicles, locations, locationHistory, selecte
         if (!loc) return null
 
         const isSelected = selectedVehicle?.id === vehicle.id
-        const history = locationHistory?.[vehicle.id] || []
-        
-        // Extract raw lat/lng points for the trail
-        const trailPoints = history.map(loc => [loc.latitude, loc.longitude])
 
         return (
           <LayerGroup key={vehicle.id}>
-            {/* Draw a subtle line connecting the historical points */}
-            {trailPoints.length > 1 && (
-              <Polyline 
-                positions={trailPoints} 
-                color={isSelected ? '#2563EB' : '#94A3B8'} 
-                weight={3} 
-                opacity={0.6}
-                dashArray="4, 6"
-              />
-            )}
-            
-            {/* Draw a small dot for every single location ping */}
-            {history.map((loc, idx) => (
-              <CircleMarker
-                key={`${vehicle.id}-hist-${idx}`}
-                center={[loc.latitude, loc.longitude]}
-                radius={isSelected ? 3 : 2}
-                pathOptions={{
-                  fillColor: isSelected ? '#3B82F6' : '#94A3B8',
-                  fillOpacity: 0.8,
-                  color: '#FFFFFF',
-                  weight: 1,
-                }}
-              />
-            ))}
-
             <AnimatedMarker
               vehicle={vehicle}
               location={loc}
