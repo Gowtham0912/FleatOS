@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models import User
 from app.routes.auth import get_current_user, require_current_user
-from app.schemas import VehicleResponse, VehicleDetail, VehicleCreate, LocationResponse
+from app.schemas import VehicleResponse, VehicleDetail, VehicleCreate, LocationResponse, VehicleUpdate
 from app.services import (
     list_vehicles,
     create_user_vehicle,
@@ -59,6 +59,28 @@ async def create_vehicle(
 ):
     """Create a new vehicle for the logged in user."""
     vehicle = await create_user_vehicle(db, current_user.id, payload)
+    return vehicle
+
+
+@router.patch(
+    "/{vehicle_id}",
+    response_model=VehicleResponse,
+    summary="Update a vehicle's details (name, type)",
+)
+async def update_vehicle_details(
+    vehicle_id: int,
+    payload: VehicleUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_current_user),
+):
+    """Update vehicle name or type."""
+    from app.services import update_vehicle
+    vehicle = await update_vehicle(db, vehicle_id, current_user.id, payload)
+    if not vehicle:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Vehicle {vehicle_id} not found or permission denied.",
+        )
     return vehicle
 
 

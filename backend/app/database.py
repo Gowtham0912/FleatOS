@@ -57,6 +57,9 @@ async def init_db():
             "ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS share_code VARCHAR(32);"
         ))
         await conn.execute(text(
+            "ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS vehicle_type VARCHAR(32) DEFAULT 'car';"
+        ))
+        await conn.execute(text(
             "UPDATE vehicles SET pairing_code = 'TRK-' || UPPER(SUBSTRING(MD5(RANDOM()::TEXT) FROM 1 FOR 6)) WHERE pairing_code IS NULL;"
         ))
         await conn.execute(text(

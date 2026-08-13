@@ -10,7 +10,7 @@ from app.models import (
     Vehicle, Location, User, PairingRequest,
     generate_pairing_code, generate_share_code,
 )
-from app.schemas import LocationCreate, VehicleCreate
+from app.schemas import LocationCreate, VehicleCreate, VehicleUpdate
 import math
 from app.osrm import get_map_match
 from app.config import settings
@@ -149,10 +149,29 @@ async def create_user_vehicle(
         name=payload.name.strip(),
         device_id=device_id,
         user_id=user_id,
+        vehicle_type=payload.vehicle_type,
         pairing_code=generate_pairing_code(),
         share_code=generate_share_code(),
     )
     db.add(vehicle)
+    await db.commit()
+    await db.refresh(vehicle)
+    return vehicle
+
+
+async def update_vehicle(
+    db: AsyncSession, vehicle_id: int, user_id: int, payload: VehicleUpdate
+) -> Vehicle | None:
+    """Update a vehicle's details."""
+    vehicle = await get_vehicle_by_id(db, vehicle_id)
+    if not vehicle or vehicle.user_id != user_id:
+        return None
+
+    if payload.name is not None:
+        vehicle.name = payload.name.strip()
+    if payload.vehicle_type is not None:
+        vehicle.vehicle_type = payload.vehicle_type
+
     await db.commit()
     await db.refresh(vehicle)
     return vehicle

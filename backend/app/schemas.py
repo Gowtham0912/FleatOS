@@ -77,6 +77,7 @@ class LocationResponse(BaseModel):
 class VehicleCreate(BaseModel):
     """Payload to create a new vehicle for logged-in user."""
     name: str = Field(..., min_length=1, max_length=128, description="Vehicle name e.g. My Car")
+    vehicle_type: str = Field(default="car", description="Type of vehicle (car, truck, motorcycle, bus)")
     device_id: str | None = Field(default=None, description="Optional pre-assigned device ID")
 
 
@@ -86,6 +87,7 @@ class VehicleResponse(BaseModel):
     id: int
     device_id: str
     name: str
+    vehicle_type: str
     pairing_code: str
     share_code: str
     user_id: int | None = None
@@ -97,6 +99,12 @@ class VehicleDetail(VehicleResponse):
     """Vehicle info plus its latest location."""
 
     latest_location: LocationResponse | None = None
+
+
+class VehicleUpdate(BaseModel):
+    """Payload to update an existing vehicle."""
+    name: str | None = Field(default=None, min_length=1, max_length=128)
+    vehicle_type: str | None = Field(default=None, description="Type of vehicle (car, truck, motorcycle, bus)")
 
 
 # ── Pairing Request schemas ─────────────────────────────────────────────────
@@ -155,6 +163,7 @@ class LocationBroadcast(BaseModel):
     device_id: str
     vehicle_id: int
     vehicle_name: str
+    vehicle_type: str
     latitude: float
     longitude: float
     timestamp: datetime

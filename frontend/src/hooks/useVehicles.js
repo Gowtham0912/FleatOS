@@ -63,15 +63,24 @@ export function useVehicles(wsMessage) {
 
     // Only merge WebSocket updates if the vehicle belongs to the logged-in user's fleet!
     setVehicles((prev) => {
-      const vehicleOwned = prev.some((v) => v.id === vehicle_id)
-      if (!vehicleOwned) return prev
+      const vehicleIndex = prev.findIndex((v) => v.id === vehicle_id)
+      if (vehicleIndex === -1) return prev
+
+      // Update name/type if changed
+      const updated = [...prev]
+      if (wsMessage.vehicle_name && updated[vehicleIndex].name !== wsMessage.vehicle_name) {
+        updated[vehicleIndex].name = wsMessage.vehicle_name
+      }
+      if (wsMessage.vehicle_type && updated[vehicleIndex].vehicle_type !== wsMessage.vehicle_type) {
+        updated[vehicleIndex].vehicle_type = wsMessage.vehicle_type
+      }
 
       setLocations((locPrev) => ({
         ...locPrev,
-        [vehicle_id]: { latitude, longitude, timestamp },
+        [vehicle_id]: { ...locPrev[vehicle_id], ...wsMessage },
       }))
 
-      return prev
+      return updated
     })
   }, [wsMessage, user])
 

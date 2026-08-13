@@ -87,6 +87,22 @@ export async function createVehicle(name) {
 }
 
 /**
+ * Update an existing vehicle's name and type.
+ */
+export async function updateVehicle(vehicleId, updates) {
+  const res = await fetch(`${BASE_URL}/vehicles/${vehicleId}`, {
+    method: 'PATCH',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(updates),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || 'Failed to update vehicle')
+  }
+  return res.json()
+}
+
+/**
  * Fetch a shared vehicle by public share code.
  */
 export async function fetchSharedVehicle(shareCode) {

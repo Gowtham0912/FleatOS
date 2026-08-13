@@ -52,12 +52,12 @@ async def post_location(
             detail="Failed to record location.",
         )
 
-    # Fire-and-forget broadcast — dashboard clients get the update instantly
     broadcast_payload = {
         "event": "location_update",
         "device_id": vehicle.device_id,
         "vehicle_id": vehicle.id,
         "vehicle_name": vehicle.name,
+        "vehicle_type": vehicle.vehicle_type,
         "latitude": location.latitude,
         "longitude": location.longitude,
         "timestamp": location.timestamp.isoformat(),

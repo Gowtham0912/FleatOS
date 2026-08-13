@@ -5,7 +5,7 @@ import VehicleCard from './VehicleCard'
 /**
  * VehicleList — scrollable panel listing tracked vehicles.
  */
-export default function VehicleList({ vehicles, locations, selectedVehicle, onSelect, onDelete, onClearUnlinked, onRefresh, isLoading }) {
+export default function VehicleList({ vehicles, locations, selectedVehicle, onSelect, onEdit, onDelete, onClearUnlinked, onRefresh, isLoading }) {
   const [query, setQuery] = useState('')
 
   const unlinkedCount = vehicles.filter((v) => v.user_id === null).length
@@ -86,6 +86,7 @@ export default function VehicleList({ vehicles, locations, selectedVehicle, onSe
               location={locations[vehicle.id]}
               isSelected={selectedVehicle?.id === vehicle.id}
               onSelect={onSelect}
+              onEdit={onEdit}
               onDelete={onDelete}
             />
           ))

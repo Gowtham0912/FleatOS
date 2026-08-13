@@ -3,6 +3,7 @@ import { Map, List } from 'lucide-react'
 import FleetMap from '../components/FleetMap'
 import VehicleList from '../components/VehicleList'
 import TopBar from '../components/TopBar'
+import EditVehicleModal from '../components/EditVehicleModal'
 import { deleteVehicle, deleteUnlinkedVehicles } from '../api/fleetApi'
 
 /**
@@ -10,6 +11,8 @@ import { deleteVehicle, deleteUnlinkedVehicles } from '../api/fleetApi'
  */
 export default function Dashboard({ vehicles, locations, isLoading, lastMessage, isConnected, onRefresh, onToggleMobileMenu }) {
   const [selectedVehicle, setSelectedVehicle] = useState(null)
+  const [editingVehicle, setEditingVehicle] = useState(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('map') // 'map' | 'list'
 
   // Interpolated positions from AnimatedMarker for live coordinate display
@@ -144,6 +147,10 @@ export default function Dashboard({ vehicles, locations, isLoading, lastMessage,
             locations={locations}
             selectedVehicle={selectedVehicle}
             onSelect={handleSelect}
+            onEdit={(v) => {
+              setEditingVehicle(v)
+              setIsEditModalOpen(true)
+            }}
             onDelete={handleDelete}
             onClearUnlinked={handleClearUnlinked}
             onRefresh={onRefresh}
@@ -151,6 +158,16 @@ export default function Dashboard({ vehicles, locations, isLoading, lastMessage,
           />
         </div>
       </div>
+
+      <EditVehicleModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false)
+          setEditingVehicle(null)
+        }}
+        vehicle={editingVehicle}
+        onVehicleUpdated={onRefresh}
+      />
     </div>
   )
 }

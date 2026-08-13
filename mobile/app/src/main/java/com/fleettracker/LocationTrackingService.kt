@@ -118,8 +118,7 @@ class LocationTrackingService : Service() {
             LOCATION_INTERVAL_MS
         )
             .setMinUpdateIntervalMillis(LOCATION_FASTEST_MS)
-            .setMinUpdateDistanceMeters(2f)
-            .setMaxUpdateDelayMillis(1_000L)
+            // Removed distance and batching delays to ensure strict 1-second time-based updates
             .build()
 
         fusedClient.requestLocationUpdates(request, locationCallback, Looper.getMainLooper())
@@ -127,7 +126,14 @@ class LocationTrackingService : Service() {
 
     // ── Backend communication ────────────────────────────────────────────────
 
+    private var isSending = false
+
     private suspend fun sendLocationToBackend(lat: Double, lon: Double, ts: String) {
+        if (isSending) {
+            Log.d(TAG, "Network busy, dropping update to prevent backlog and out-of-order delivery.")
+            return
+        }
+        isSending = true
         try {
             val payload = LocationPayload(
                 deviceId  = deviceId,
@@ -149,6 +155,8 @@ class LocationTrackingService : Service() {
         } catch (e: Exception) {
             lastStatus = "Error: ${e.localizedMessage}"
             Log.e(TAG, "Network error", e)
+        } finally {
+            isSending = false
         }
 
         // Update notification text with latest status

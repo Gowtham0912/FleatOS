@@ -36,8 +36,16 @@ function getContinuousRotation(current, target) {
   return current + diff
 }
 
-const vehicleIcon = (isSelected) =>
-  L.divIcon({
+const ICONS_SVG = {
+  car: `<svg viewBox="0 0 24 24" width="100%" height="100%" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>`,
+  truck: `<svg viewBox="0 0 24 24" width="100%" height="100%" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17h4V5H2v12h3"/><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5"/><path d="M14 17h1"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>`,
+  motorcycle: `<svg viewBox="0 0 24 24" width="100%" height="100%" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="17" r="3"/><circle cx="19" cy="17" r="3"/><path d="M5 14v-4l4-4 5 4"/><path d="M9 17h5"/><path d="M14 14l-3-4-2 3"/></svg>`,
+  bus: `<svg viewBox="0 0 24 24" width="100%" height="100%" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"/><circle cx="7" cy="18" r="2"/><path d="M9 18h5"/><circle cx="16" cy="18" r="2"/></svg>`
+}
+
+const vehicleIcon = (isSelected, vehicleType = 'car') => {
+  const svg = ICONS_SVG[vehicleType] || ICONS_SVG.car
+  return L.divIcon({
     className: 'vehicle-marker-icon',
     html: `
       <div style="
@@ -50,27 +58,34 @@ const vehicleIcon = (isSelected) =>
       ">
         <div style="
           position: absolute;
-          width: ${isSelected ? '32px' : '26px'};
-          height: ${isSelected ? '32px' : '26px'};
+          width: ${isSelected ? '36px' : '30px'};
+          height: ${isSelected ? '36px' : '30px'};
           border-radius: 50%;
           background: ${isSelected ? 'rgba(37, 99, 235, 0.25)' : 'rgba(2, 132, 199, 0.2)'};
           animation: pulse 2s infinite;
         "></div>
         <div class="vehicle-icon-inner" style="
           position: relative;
-          width: ${isSelected ? '18px' : '14px'};
-          height: ${isSelected ? '18px' : '14px'};
+          width: ${isSelected ? '24px' : '20px'};
+          height: ${isSelected ? '24px' : '20px'};
           border-radius: 50%;
           background: ${isSelected ? '#2563EB' : '#0284C7'};
           border: 2px solid #FFFFFF;
           box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          display: flex;
+          align-items: center;
+          justify-content: center;
         ">
+          <div style="width: 65%; height: 65%; transform: rotate(0deg); display: flex; align-items: center; justify-content: center;">
+            ${svg}
+          </div>
       </div>
     `,
     iconSize: [36, 36],
     iconAnchor: [18, 18],
     popupAnchor: [0, -18],
   })
+}
 
 function lerp(a, b, t) {
   return a + (b - a) * t
@@ -101,7 +116,7 @@ export default function AnimatedMarker({
   // Display state
   const currentPos = useRef(null)
 
-  const icon = useMemo(() => vehicleIcon(isSelected), [isSelected])
+  const icon = useMemo(() => vehicleIcon(isSelected, vehicle.vehicle_type), [isSelected, vehicle.vehicle_type])
 
   useEffect(() => {
     if (!location) return
@@ -113,7 +128,7 @@ export default function AnimatedMarker({
 
     if (state.lastPingTime) {
       const pingInterval = now - state.lastPingTime
-      state.duration = Math.min(Math.max(pingInterval, 1000), 15000)
+      state.duration = Math.min(Math.max(pingInterval, 500), 15000)
     } else {
       state.duration = 2000
     }
@@ -185,9 +200,9 @@ export default function AnimatedMarker({
       expectedHeading = getHeading(route[route.length - 2], route[route.length - 1])
     }
 
-    // Anti-jitter: If the vehicle moved less than 5 meters, it's likely just stationary GPS noise.
+    // Anti-jitter: If the vehicle moved less than 1 meter, it's likely just stationary GPS noise.
     // Keep the previous heading and set speed to 0 so it doesn't wildly rotate or predict forward.
-    if (totalDist < 5) {
+    if (totalDist < 1) {
       expectedHeading = state.startRot
       state.speed = 0
     } else {

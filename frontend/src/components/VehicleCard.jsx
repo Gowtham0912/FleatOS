@@ -1,4 +1,4 @@
-import { Truck, MapPin, Clock, Trash2 } from 'lucide-react'
+import { Truck, MapPin, Clock, Trash2, Edit2, Car, Bike, Bus } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { useState, useEffect } from 'react'
 
@@ -7,8 +7,18 @@ import { useState, useEffect } from 'react'
  */
 const ACTIVE_THRESHOLD_MS = 2 * 60 * 1000   // 2 minutes
 
-export default function VehicleCard({ vehicle, location, isSelected, onSelect, onDelete }) {
+export default function VehicleCard({ vehicle, location, isSelected, onSelect, onEdit, onDelete }) {
   const hasLocation = !!location
+
+  const getVehicleIcon = (type) => {
+    switch (type) {
+      case 'truck': return <Truck size={13} />
+      case 'motorcycle': return <Bike size={13} />
+      case 'bus': return <Bus size={13} />
+      case 'car':
+      default: return <Car size={13} />
+    }
+  }
 
   const [, setTick] = useState(0)
   useEffect(() => {
@@ -29,6 +39,11 @@ export default function VehicleCard({ vehicle, location, isSelected, onSelect, o
     if (onDelete) onDelete(vehicle.id)
   }
 
+  const handleEdit = (e) => {
+    e.stopPropagation()
+    if (onEdit) onEdit(vehicle)
+  }
+
   return (
     <div
       onClick={() => onSelect(vehicle)}
@@ -44,7 +59,7 @@ export default function VehicleCard({ vehicle, location, isSelected, onSelect, o
           <div className={`w-6 h-6 rounded flex items-center justify-center shrink-0 ${
             isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'
           }`}>
-            <Truck size={13} />
+            {getVehicleIcon(vehicle.vehicle_type)}
           </div>
           <span className="text-xs font-bold text-slate-900 truncate">
             {vehicle.name}
@@ -53,15 +68,26 @@ export default function VehicleCard({ vehicle, location, isSelected, onSelect, o
 
         <div className="flex items-center gap-2 shrink-0">
           <span className={`status-dot ${isActive ? 'active' : 'inactive'}`} title={isActive ? 'Active' : 'Offline'} />
-          {onDelete && (
-            <button
-              onClick={handleDelete}
-              title="Delete Vehicle"
-              className="text-slate-300 hover:text-rose-600 p-0.5 rounded transition-colors cursor-pointer opacity-80 group-hover:opacity-100"
-            >
-              <Trash2 size={13} />
-            </button>
-          )}
+          <div className="flex items-center opacity-80 group-hover:opacity-100 transition-opacity">
+            {onEdit && (
+              <button
+                onClick={handleEdit}
+                title="Edit Vehicle"
+                className="text-slate-300 hover:text-blue-600 p-1 rounded transition-colors cursor-pointer"
+              >
+                <Edit2 size={13} />
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={handleDelete}
+                title="Delete Vehicle"
+                className="text-slate-300 hover:text-rose-600 p-1 rounded transition-colors cursor-pointer ml-0.5"
+              >
+                <Trash2 size={13} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
