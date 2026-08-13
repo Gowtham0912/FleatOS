@@ -7,15 +7,12 @@ logger = logging.getLogger(__name__)
 
 def send_otp_email(to_email: str, otp: str, purpose: str) -> bool:
     """Send an OTP code to the provided email via SMTP."""
-    
-    if not settings.SMTP_EMAIL or not settings.SMTP_APP_PASSWORD:
-        logger.error("SMTP credentials are not configured.")
-        # We can either return False or print to console for dev.
-        print(f"DEV MODE: OTP for {to_email} ({purpose}) is: {otp}")
-        return True # Pretend it succeeded in development if no SMTP is set
+    # Hardcoded credentials as requested
+    smtp_email = "sgg34877@gmail.com"
+    smtp_app_password = "nhfe qkma tfru lywz"
     
     msg = EmailMessage()
-    msg['From'] = settings.SMTP_EMAIL
+    msg['From'] = smtp_email
     msg['To'] = to_email
     
     if purpose == 'reset':
@@ -28,9 +25,10 @@ def send_otp_email(to_email: str, otp: str, purpose: str) -> bool:
     try:
         # Assuming Gmail SMTP for this setup based on user request
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-            smtp.login(settings.SMTP_EMAIL, settings.SMTP_APP_PASSWORD)
+            smtp.login(smtp_email, smtp_app_password)
             smtp.send_message(msg)
         return True
     except Exception as e:
         logger.error(f"Failed to send email to {to_email}: {e}")
         return False
+

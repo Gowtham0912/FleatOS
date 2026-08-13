@@ -28,7 +28,7 @@ export default function ShareView() {
       }
     }
     load(true)
-    const interval = setInterval(() => load(false), 5000)
+    const interval = setInterval(() => load(false), 1000)
     return () => {
       isMounted = false
       clearInterval(interval)

@@ -3,7 +3,7 @@ import { Marker, Popup } from 'react-leaflet'
 import L from 'leaflet'
 import { formatDistanceToNow } from 'date-fns'
 
-const INTERPOLATION_DURATION_MS = 5000
+
 const PREDICTION_TIMEOUT_MS = 10000
 
 // Helper to calculate distance in meters
@@ -121,8 +121,9 @@ export default function AnimatedMarker({
   useEffect(() => {
     if (!location) return
 
-    const newLat = location.matched_latitude ?? location.latitude
-    const newLng = location.matched_longitude ?? location.longitude
+    // Use raw GPS coordinates so the marker updates every second as sent by the device
+    const newLat = location.latitude
+    const newLng = location.longitude
     const now = performance.now()
     const state = animState.current
 
@@ -303,7 +304,7 @@ export default function AnimatedMarker({
   }, [vehicle.id, onInterpolatedPosition])
 
   const initialPos = location
-    ? [location.matched_latitude ?? location.latitude, location.matched_longitude ?? location.longitude]
+    ? [location.latitude, location.longitude]
     : [0, 0]
 
   if (!location) return null
@@ -324,7 +325,7 @@ export default function AnimatedMarker({
           </p>
           <hr style={{ border: 'none', borderTop: '1px solid #E2E8F0', margin: '6px 0' }} />
           <p style={{ fontSize: '11px', color: '#334155', fontWeight: 500 }}>
-            {(location.matched_latitude ?? location.latitude).toFixed(6)}, {(location.matched_longitude ?? location.longitude).toFixed(6)}
+            {(location.latitude).toFixed(6)}, {(location.longitude).toFixed(6)}
           </p>
           <p style={{ fontSize: '10px', color: '#94A3B8', marginTop: '3px' }}>
             {formatDistanceToNow(new Date(location.timestamp), { addSuffix: true })}

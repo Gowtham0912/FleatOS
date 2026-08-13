@@ -9,7 +9,7 @@ import { deleteVehicle, deleteUnlinkedVehicles } from '../api/fleetApi'
 /**
  * Dashboard page — simple clean live-tracking view with mobile tabs.
  */
-export default function Dashboard({ vehicles, locations, isLoading, lastMessage, isConnected, onRefresh, onToggleMobileMenu }) {
+export default function Dashboard({ vehicles, locations, locationHistory, isLoading, lastMessage, isConnected, onRefresh, onToggleMobileMenu }) {
   const [selectedVehicle, setSelectedVehicle] = useState(null)
   const [editingVehicle, setEditingVehicle] = useState(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
@@ -100,6 +100,7 @@ export default function Dashboard({ vehicles, locations, isLoading, lastMessage,
           <FleetMap
             vehicles={vehicles}
             locations={locations}
+            locationHistory={locationHistory}
             selectedVehicle={selectedVehicle}
             lastWsMessage={lastMessage}
             onInterpolatedPositions={handleInterpolatedPositions}

@@ -11,6 +11,7 @@ import { useAuth } from '../context/AuthContext'
 export function useVehicles(wsMessage) {
   const [vehicles, setVehicles]   = useState([])
   const [locations, setLocations] = useState({})
+  const [locationHistory, setLocationHistory] = useState({})
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError]         = useState(null)
   const { user } = useAuth()
@@ -20,6 +21,7 @@ export function useVehicles(wsMessage) {
     if (!user) {
       setVehicles([])
       setLocations({})
+      setLocationHistory({})
       setIsLoading(false)
       return
     }
@@ -44,6 +46,13 @@ export function useVehicles(wsMessage) {
         })
       )
       setLocations(locationMap)
+      
+      // Initialize history with the latest location as the first point
+      const historyMap = {}
+      for (const [vId, loc] of Object.entries(locationMap)) {
+        historyMap[vId] = [loc]
+      }
+      setLocationHistory(historyMap)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -80,6 +89,16 @@ export function useVehicles(wsMessage) {
         [vehicle_id]: { ...locPrev[vehicle_id], ...wsMessage },
       }))
 
+      setLocationHistory((histPrev) => {
+        const existing = histPrev[vehicle_id] || []
+        // Keep last 60 points (1 minute of history at 1 ping/sec)
+        const updatedHistory = [...existing, wsMessage].slice(-60)
+        return {
+          ...histPrev,
+          [vehicle_id]: updatedHistory
+        }
+      })
+
       return updated
     })
   }, [wsMessage, user])
@@ -87,6 +106,7 @@ export function useVehicles(wsMessage) {
   return {
     vehicles,
     locations,
+    locationHistory,
     isLoading,
     error,
     refresh: loadVehicles,

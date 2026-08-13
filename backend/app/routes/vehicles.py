@@ -109,6 +109,7 @@ async def get_shared_vehicle(
         pairing_code=vehicle.pairing_code,
         share_code=vehicle.share_code,
         user_id=vehicle.user_id,
+        vehicle_type=vehicle.vehicle_type,
         latest_location=latest,
     )
 
@@ -138,6 +139,7 @@ async def get_vehicle(
         pairing_code=vehicle.pairing_code,
         share_code=vehicle.share_code,
         user_id=vehicle.user_id,
+        vehicle_type=vehicle.vehicle_type,
         latest_location=latest,
     )
 

@@ -16,7 +16,7 @@ import { useVehicles } from './hooks/useVehicles'
  */
 export default function App() {
   const { lastMessage, isConnected } = useWebSocket()
-  const { vehicles, locations, isLoading, error, refresh } = useVehicles(lastMessage)
+  const { vehicles, locations, locationHistory, isLoading, error, refresh } = useVehicles(lastMessage)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   const toggleMobileMenu = () => setIsMobileMenuOpen((prev) => !prev)
@@ -58,6 +58,7 @@ export default function App() {
                     <Dashboard
                       vehicles={vehicles}
                       locations={locations}
+                      locationHistory={locationHistory}
                       isLoading={isLoading}
                       lastMessage={lastMessage}
                       isConnected={isConnected}
