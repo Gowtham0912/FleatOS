@@ -608,8 +608,9 @@
     }
   }
 
-  let simLat = 20.0;
-  let simLng = 78.0;
+  // Start in a city center (New Delhi) where roads exist so OSRM snapping works!
+  let simLat = 28.6304;
+  let simLng = 77.2177;
 
   function startTracking() {
     isTracking = true;

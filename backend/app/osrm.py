@@ -49,6 +49,13 @@ async def get_map_match(coordinates: list[tuple[float, float]], timestamps: list
             else:
                 logger.warning("OSRM Map Matching failed: %s", data.get("message", data.get("code")))
                 return None
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 400:
+            # OSRM returns 400 (NoSegment) if the coordinates are too far from any mapped road
+            logger.debug("OSRM could not match coordinates to a road (400 Bad Request). Using raw GPS data.")
+        else:
+            logger.error("Error connecting to OSRM Match service: %s", exc)
+        return None
     except Exception as exc:
         logger.error("Error connecting to OSRM Match service: %s", exc)
         return None
