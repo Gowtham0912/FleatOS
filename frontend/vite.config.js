@@ -8,12 +8,12 @@ export default defineConfig({
     proxy: {
       // Proxy API calls to the local FastAPI backend
       '/api': {
-        target: 'https://fleet-backend-5i1b.onrender.com',
+        target: 'http://localhost:8000',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
       '/ws': {
-        target: 'wss://fleet-backend-5i1b.onrender.com',
+        target: 'ws://localhost:8000',
         ws: true,
         changeOrigin: true,
       },

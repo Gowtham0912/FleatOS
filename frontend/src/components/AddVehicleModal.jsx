@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { X, Plus, QrCode, Copy, Check, Share2, Smartphone } from 'lucide-react'
 import { createVehicle } from '../api/fleetApi'
 
-const BACKEND_HOST = 'https://fleet-backend-5i1b.onrender.com'
+const BACKEND_HOST = 'http://localhost:8000'
 
 export default function AddVehicleModal({ isOpen, onClose, onVehicleAdded }) {
   const [name, setName] = useState('')

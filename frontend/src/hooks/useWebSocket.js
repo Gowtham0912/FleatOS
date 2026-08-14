@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 
-const WS_URL = 'wss://fleet-backend-5i1b.onrender.com/ws'
+const WS_URL = 'ws://localhost:8000/ws'
 const RECONNECT_DELAY_MS = 3000
 
 /**

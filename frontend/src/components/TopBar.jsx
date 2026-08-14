@@ -5,7 +5,7 @@ import { format } from 'date-fns'
 import { useAuth } from '../context/AuthContext'
 
 // The backend host — live Render public backend
-const BACKEND_HOST = 'https://fleet-backend-5i1b.onrender.com'
+const BACKEND_HOST = 'http://localhost:8000'
 
 /**
  * TopBar — shows page title, last update time, Connect GPS button,
