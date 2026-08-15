@@ -50,12 +50,12 @@ class User(Base):
 
     # Vehicles owned by this user
     vehicles: Mapped[list["Vehicle"]] = relationship(
-        "Vehicle", back_populates="user", cascade="all, delete-orphan"
+        "Vehicle", foreign_keys="[Vehicle.user_id]", back_populates="user", cascade="all, delete-orphan"
     )
 
     # Pairing requests sent to this user
     pairing_requests: Mapped[list["PairingRequest"]] = relationship(
-        "PairingRequest", back_populates="user", cascade="all, delete-orphan"
+        "PairingRequest", foreign_keys="[PairingRequest.user_id]", back_populates="user", cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:
