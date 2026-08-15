@@ -2,6 +2,7 @@ import { useEffect, useRef, useMemo } from 'react'
 import { Marker, Popup } from 'react-leaflet'
 import L from 'leaflet'
 import { formatDistanceToNow } from 'date-fns'
+import { BASE_URL } from '../api/fleetApi'
 
 
 const PREDICTION_TIMEOUT_MS = 10000
@@ -125,7 +126,10 @@ export default function AnimatedMarker({
   // Display state
   const currentPos = useRef(null)
 
-  const driverAvatarUrl = vehicle.driver?.avatar_url || vehicle.driver_avatar_url
+  let driverAvatarUrl = vehicle.driver?.avatar_url || vehicle.driver_avatar_url
+  if (driverAvatarUrl && driverAvatarUrl.startsWith('/')) {
+    driverAvatarUrl = `${BASE_URL}${driverAvatarUrl}`
+  }
   const icon = useMemo(() => vehicleIcon(isSelected, vehicle.vehicle_type, driverAvatarUrl), [isSelected, vehicle.vehicle_type, driverAvatarUrl])
 
   useEffect(() => {

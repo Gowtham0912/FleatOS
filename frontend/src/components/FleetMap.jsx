@@ -3,6 +3,7 @@ import L from 'leaflet'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import AnimatedMarker from './AnimatedMarker'
+import { BASE_URL } from '../api/fleetApi'
 
 /**
  * MapFlyTo — imperative component to pan/zoom to a vehicle when selected.
@@ -66,12 +67,17 @@ export default function FleetMap({ vehicles, locations, locationHistory, selecte
       ]
     : null
 
+  let ownerAvatarUrl = ownerUser?.avatar_url
+  if (ownerAvatarUrl && ownerAvatarUrl.startsWith('/')) {
+    ownerAvatarUrl = `${BASE_URL}${ownerAvatarUrl}`
+  }
+
   const ownerIcon = ownerUser ? L.divIcon({
     className: 'bg-transparent',
     html: `
       <div class="relative w-10 h-10">
         <div class="absolute inset-0 rounded-full border-2 border-[#17b385] overflow-hidden bg-white shadow-md z-10 flex items-center justify-center">
-          <img src="${ownerUser.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(ownerUser.full_name || 'Owner') + '&background=f1f5f9&color=64748b'}" 
+          <img src="${ownerAvatarUrl || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(ownerUser.full_name || 'Owner') + '&background=f1f5f9&color=64748b'}" 
                class="w-full h-full object-cover" 
                alt="Owner" />
         </div>
