@@ -138,7 +138,8 @@ export default function AnimatedMarker({
   if (driverAvatarUrl && driverAvatarUrl.startsWith('/')) {
     driverAvatarUrl = `${BASE_URL}${driverAvatarUrl}`
   }
-  const icon = useMemo(() => vehicleIcon(isSelected, vehicle.vehicle_type, driverAvatarUrl), [isSelected, vehicle.vehicle_type, driverAvatarUrl])
+  // We pass null for the driverAvatarUrl so the marker always shows the default vehicle icon
+  const icon = useMemo(() => vehicleIcon(isSelected, vehicle.vehicle_type, null), [isSelected, vehicle.vehicle_type])
 
   useEffect(() => {
     if (!location) return
@@ -275,13 +276,26 @@ export default function AnimatedMarker({
     >
       <Popup>
         <div style={{ fontFamily: 'Inter, sans-serif', minWidth: '170px' }}>
+          
+          {driverAvatarUrl && (
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', paddingBottom: '8px', borderBottom: '1px solid #E2E8F0' }}>
+              <img src={driverAvatarUrl} alt="Driver Avatar" style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', marginRight: '8px' }} />
+              <div>
+                <p style={{ fontWeight: 600, fontSize: '12px', color: '#0F172A', margin: 0 }}>
+                  {vehicle.driver?.full_name || 'Driver'}
+                </p>
+                <p style={{ fontSize: '10px', color: '#64748B', margin: 0 }}>Driving</p>
+              </div>
+            </div>
+          )}
+
           <p style={{ fontWeight: 700, fontSize: '13px', color: '#0F172A', marginBottom: '2px' }}>
             {vehicle.name}
           </p>
           <p style={{ fontSize: '11px', color: '#64748B', fontFamily: 'monospace', marginBottom: '6px' }}>
             {vehicle.device_id}
           </p>
-          <hr style={{ border: 'none', borderTop: '1px solid #E2E8F0', margin: '6px 0' }} />
+          {!driverAvatarUrl && <hr style={{ border: 'none', borderTop: '1px solid #E2E8F0', margin: '6px 0' }} />}
           <p style={{ fontSize: '11px', color: '#334155', fontWeight: 500 }}>
             {(location.latitude).toFixed(6)}, {(location.longitude).toFixed(6)}
           </p>
