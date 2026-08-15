@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models import User
-from app.routes.auth import require_current_user
+from app.routes.auth import require_current_user, get_current_user
 from app.schemas import (
     PairingRequestCreate,
     PairingRequestResponse,
@@ -44,10 +44,12 @@ router = APIRouter(prefix="/pairing", tags=["Pairing"])
 async def submit_pairing_request(
     payload: PairingRequestCreate,
     db: AsyncSession = Depends(get_db),
+    current_user: User | None = Depends(get_current_user),
 ):
     """
     Called by the GPS sender page when a user enters an account code.
     Finds the account owner and creates a pending pairing request.
+    If the requester is already logged in as the account owner, it auto-approves.
     """
     user = await find_user_by_account_code(db, payload.account_code)
     if not user:
@@ -56,7 +58,13 @@ async def submit_pairing_request(
             detail="Invalid account code. Please check and try again.",
         )
 
-    req = await create_pairing_request(db, user.id, payload.device_id)
+    sender_id = current_user.id if current_user else None
+    req = await create_pairing_request(db, user.id, payload.device_id, sender_id)
+
+    # Auto-approve if the requester is the account owner
+    if current_user and current_user.id == user.id and req.status == "pending":
+        req = await approve_pairing_request(db, req.id, user.id, f"Device {payload.device_id[:6]}")
+
     logger.info(
         "Pairing request %s | device=%s -> user=%s (status=%s)",
         "created" if req.status == "pending" else "found",

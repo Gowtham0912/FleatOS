@@ -13,14 +13,26 @@ import ShareView from './pages/ShareView'
 import GPSSender from './pages/GPSSender'
 import { useWebSocket } from './hooks/useWebSocket'
 import { useVehicles } from './hooks/useVehicles'
+import { useAuth } from './context/AuthContext'
 
 /**
  * App — root component with full authentication & route configuration.
  */
 export default function App() {
+  const { isLoading: authLoading } = useAuth()
   const { lastMessage, isConnected } = useWebSocket()
   const { vehicles, locations, locationHistory, isLoading, error, refresh } = useVehicles(lastMessage)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
+  if (authLoading) {
+    return (
+      <div className="fixed inset-0 bg-white flex flex-col items-center justify-center z-[9999]">
+        <img src="/globe.svg" alt="Loading..." className="w-16 h-16 mb-6 opacity-80" />
+        <h1 className="text-2xl font-bold text-slate-900 tracking-tight mb-2">FleetOS</h1>
+        <p className="text-sm font-medium text-slate-500">Starting engine...</p>
+      </div>
+    )
+  }
 
   const toggleMobileMenu = () => setIsMobileMenuOpen((prev) => !prev)
   const closeMobileMenu = () => setIsMobileMenuOpen(false)

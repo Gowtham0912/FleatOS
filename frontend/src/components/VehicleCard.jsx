@@ -1,6 +1,6 @@
-import { Truck, MapPin, Clock, Trash2, Edit2, Car, Bike, Bus } from 'lucide-react'
+import { Truck, MapPin, Clock, Trash2, Edit2, Car, Bike, Bus, MoreVertical } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 /**
  * VehicleCard — a single vehicle row in the sidebar vehicle list with delete action.
@@ -20,10 +20,22 @@ export default function VehicleCard({ vehicle, location, isSelected, onSelect, o
     }
   }
 
-  const [, setTick] = useState(0)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const menuRef = useRef(null)
+
   useEffect(() => {
     const id = setInterval(() => setTick(t => t + 1), 30_000)
     return () => clearInterval(id)
+  }, [])
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
   const isActive = hasLocation
@@ -36,11 +48,13 @@ export default function VehicleCard({ vehicle, location, isSelected, onSelect, o
 
   const handleDelete = (e) => {
     e.stopPropagation()
-    if (onDelete) onDelete(vehicle.id)
+    setIsMenuOpen(false)
+    if (onDelete) onDelete(vehicle)
   }
 
   const handleEdit = (e) => {
     e.stopPropagation()
+    setIsMenuOpen(false)
     if (onEdit) onEdit(vehicle)
   }
 
@@ -68,24 +82,41 @@ export default function VehicleCard({ vehicle, location, isSelected, onSelect, o
 
         <div className="flex items-center gap-2 shrink-0">
           <span className={`status-dot ${isActive ? 'active' : 'inactive'}`} title={isActive ? 'Active' : 'Offline'} />
-          <div className="flex items-center opacity-80 group-hover:opacity-100 transition-opacity">
-            {onEdit && (
+          <div className="relative flex items-center opacity-80 group-hover:opacity-100 transition-opacity" ref={menuRef}>
+            {(onEdit || onDelete) && (
               <button
-                onClick={handleEdit}
-                title="Edit Vehicle"
-                className="text-slate-300 hover:text-brand-primary p-1 rounded transition-colors cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setIsMenuOpen(!isMenuOpen)
+                }}
+                title="Options"
+                className="text-slate-400 hover:text-slate-700 p-1 rounded transition-colors cursor-pointer"
               >
-                <Edit2 size={13} />
+                <MoreVertical size={14} />
               </button>
             )}
-            {onDelete && (
-              <button
-                onClick={handleDelete}
-                title="Delete Vehicle"
-                className="text-slate-300 hover:text-rose-600 p-1 rounded transition-colors cursor-pointer ml-0.5"
-              >
-                <Trash2 size={13} />
-              </button>
+
+            {isMenuOpen && (
+              <div className="absolute right-0 top-full mt-1 w-32 bg-white rounded-md shadow-lg border border-slate-100 py-1 z-10">
+                {onEdit && (
+                  <button
+                    onClick={handleEdit}
+                    className="w-full text-left px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50 hover:text-brand-primary flex items-center gap-2 transition-colors"
+                  >
+                    <Edit2 size={12} />
+                    Edit
+                  </button>
+                )}
+                {onDelete && (
+                  <button
+                    onClick={handleDelete}
+                    className="w-full text-left px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition-colors"
+                  >
+                    <Trash2 size={12} />
+                    Delete
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </div>

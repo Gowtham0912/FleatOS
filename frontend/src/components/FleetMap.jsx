@@ -1,4 +1,5 @@
-import { MapContainer, TileLayer, useMap, LayersControl, LayerGroup, Polyline, CircleMarker } from 'react-leaflet'
+import { MapContainer, TileLayer, useMap, LayersControl, LayerGroup, Polyline, CircleMarker, Marker } from 'react-leaflet'
+import L from 'leaflet'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import AnimatedMarker from './AnimatedMarker'
@@ -27,7 +28,7 @@ function MapFlyTo({ vehicleId, position }) {
  * FleetMap — Leaflet map showing all vehicle markers with smooth
  * real-time interpolation between GPS pings and breadcrumb route trails.
  */
-export default function FleetMap({ vehicles, locations, locationHistory, selectedVehicle, lastWsMessage, onInterpolatedPositions }) {
+export default function FleetMap({ vehicles, locations, locationHistory, selectedVehicle, lastWsMessage, onInterpolatedPositions, ownerLocation, ownerUser }) {
   const [userCenter, setUserCenter] = useState(null)
 
   // Track interpolated positions so the Dashboard overlay can show live coords
@@ -64,6 +65,22 @@ export default function FleetMap({ vehicles, locations, locationHistory, selecte
         locations[selectedVehicle.id].matched_longitude ?? locations[selectedVehicle.id].longitude
       ]
     : null
+
+  const ownerIcon = ownerUser ? L.divIcon({
+    className: 'bg-transparent',
+    html: `
+      <div class="relative w-10 h-10">
+        <div class="absolute inset-0 rounded-full border-2 border-[#17b385] overflow-hidden bg-white shadow-md z-10 flex items-center justify-center">
+          <img src="${ownerUser.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(ownerUser.full_name || 'Owner') + '&background=f1f5f9&color=64748b'}" 
+               class="w-full h-full object-cover" 
+               alt="Owner" />
+        </div>
+        <div class="absolute inset-0 rounded-full bg-[#17b385] opacity-40 animate-ping z-0"></div>
+      </div>
+    `,
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
+  }) : null
 
   return (
     <MapContainer
@@ -127,6 +144,16 @@ export default function FleetMap({ vehicles, locations, locationHistory, selecte
           </LayerGroup>
         )
       })}
+
+      {ownerLocation && ownerUser && ownerIcon && (
+        <LayerGroup key="owner-marker">
+          <Marker 
+            position={[ownerLocation.latitude, ownerLocation.longitude]} 
+            icon={ownerIcon}
+            zIndexOffset={1000}
+          />
+        </LayerGroup>
+      )}
     </MapContainer>
   )
 }

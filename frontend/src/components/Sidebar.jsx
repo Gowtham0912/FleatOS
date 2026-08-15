@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { NavLink } from 'react-router-dom'
 import { LayoutDashboard, Truck, Navigation, Wifi, WifiOff, Shield, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -27,6 +27,44 @@ export default function Sidebar({ isConnected, vehicleCount, isOpen, onClose }) 
     return () => clearInterval(interval)
   }, [user])
 
+  const prevPendingCountRef = useRef(pendingCount)
+
+  // Play a bell sound when a new pair request is received
+  useEffect(() => {
+    if (pendingCount > prevPendingCountRef.current) {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext
+        const ctx = new AudioContext()
+        
+        // Simple 2-tone bell/chime
+        const playTone = (freq, startTime, duration) => {
+          const osc = ctx.createOscillator()
+          const gainNode = ctx.createGain()
+          osc.type = 'sine'
+          osc.frequency.setValueAtTime(freq, startTime)
+          
+          gainNode.gain.setValueAtTime(0, startTime)
+          gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.05)
+          gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration)
+          
+          osc.connect(gainNode)
+          gainNode.connect(ctx.destination)
+          
+          osc.start(startTime)
+          osc.stop(startTime + duration)
+        }
+        
+        const now = ctx.currentTime
+        playTone(880, now, 0.6) // A5
+        playTone(1108.73, now + 0.15, 0.8) // C#6
+        
+      } catch (e) {
+        console.warn('Audio play failed', e)
+      }
+    }
+    prevPendingCountRef.current = pendingCount
+  }, [pendingCount])
+
   const navItems = [
     { to: '/',           icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/vehicles',   icon: Truck,           label: 'Vehicles'  },
@@ -35,22 +73,17 @@ export default function Sidebar({ isConnected, vehicleCount, isOpen, onClose }) 
   ]
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-white border-r border-slate-200 w-64 md:w-60">
+    <div className="flex flex-col h-full bg-white border-r border-slate-200 w-56">
       {/* ── Logo & Header ────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 shrink-0 flex items-center justify-center">
-            <img src="/logo.png" alt="Fleet OS" className="w-full h-full object-contain" />
-          </div>
-          <div>
-            <p className="text-sm font-bold text-slate-900 leading-none">Fleet Tracker</p>
-            <p className="text-xs text-slate-500 mt-1">GPS Control Panel</p>
-          </div>
+      <div className="relative flex flex-col items-center justify-center px-5 py-6 border-b border-slate-200">
+        <div className="w-32 h-10 shrink-0 flex items-center justify-center">
+          <img src="/logo.png" alt="Fleet OS" className="w-full h-full object-contain" />
         </div>
+        <p className="text-xs text-slate-500 mt-2 font-medium">GPS Control Panel</p>
         {/* Mobile close button */}
         <button
           onClick={onClose}
-          className="md:hidden p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+          className="md:hidden absolute top-4 right-4 p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
           title="Close menu"
         >
           <X size={18} />

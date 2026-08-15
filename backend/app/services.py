@@ -4,6 +4,7 @@ Service layer — all business logic lives here, routes stay thin.
 
 from datetime import datetime, timezone
 from sqlalchemy import select, desc, func
+from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
@@ -42,7 +43,7 @@ async def get_or_create_vehicle(
 
     # Lookup by device_id if not found by pairing code
     result = await db.execute(
-        select(Vehicle).where(Vehicle.device_id == device_id)
+        select(Vehicle).options(joinedload(Vehicle.driver)).where(Vehicle.device_id == device_id)
     )
     vehicle = result.scalar_one_or_none()
 
@@ -69,7 +70,7 @@ async def get_vehicle_for_approved_device(
     """
     # First check: does a vehicle with this device_id already exist?
     result = await db.execute(
-        select(Vehicle).where(Vehicle.device_id == device_id)
+        select(Vehicle).options(joinedload(Vehicle.driver)).where(Vehicle.device_id == device_id)
     )
     vehicle = result.scalar_one_or_none()
     if vehicle and vehicle.user_id is not None:
@@ -87,7 +88,7 @@ async def get_vehicle_for_approved_device(
     if req and req.vehicle_id:
         # Fetch the linked vehicle
         result = await db.execute(
-            select(Vehicle).where(Vehicle.id == req.vehicle_id)
+            select(Vehicle).options(joinedload(Vehicle.driver)).where(Vehicle.id == req.vehicle_id)
         )
         return result.scalar_one_or_none()
 
@@ -131,7 +132,7 @@ async def record_location(
 
 async def list_vehicles(db: AsyncSession, user_id: int | None = None) -> list[Vehicle]:
     """Return vehicles owned by user_id, or all vehicles if unauthenticated."""
-    stmt = select(Vehicle)
+    stmt = select(Vehicle).options(joinedload(Vehicle.driver))
     if user_id is not None:
         stmt = stmt.where(Vehicle.user_id == user_id)
     stmt = stmt.order_by(Vehicle.id)
@@ -183,7 +184,7 @@ async def get_vehicle_by_share_code(
     """Return a vehicle by its public share code."""
     code = share_code.strip().upper()
     res = await db.execute(
-        select(Vehicle).where(func.upper(Vehicle.share_code) == code)
+        select(Vehicle).options(joinedload(Vehicle.driver)).where(func.upper(Vehicle.share_code) == code)
     )
     return res.scalar_one_or_none()
 
@@ -191,7 +192,7 @@ async def get_vehicle_by_share_code(
 async def get_vehicle_by_id(db: AsyncSession, vehicle_id: int) -> Vehicle | None:
     """Return a vehicle by its primary key."""
     result = await db.execute(
-        select(Vehicle).where(Vehicle.id == vehicle_id)
+        select(Vehicle).options(joinedload(Vehicle.driver)).where(Vehicle.id == vehicle_id)
     )
     return result.scalar_one_or_none()
 
@@ -314,7 +315,7 @@ async def find_user_by_account_code(
 
 
 async def create_pairing_request(
-    db: AsyncSession, user_id: int, device_id: str
+    db: AsyncSession, user_id: int, device_id: str, sender_id: int | None = None
 ) -> PairingRequest:
     """
     Create a new pairing request or return existing pending/approved one.
@@ -359,6 +360,7 @@ async def create_pairing_request(
     req = PairingRequest(
         user_id=user_id,
         device_id=device_id,
+        sender_id=sender_id,
         status="pending",
     )
     db.add(req)
@@ -405,8 +407,9 @@ async def approve_pairing_request(
     vehicle = existing.scalar_one_or_none()
 
     if vehicle:
-        # Reuse existing vehicle — update ownership and name
+        # Reuse existing vehicle — update ownership, driver, and name
         vehicle.user_id = user_id
+        vehicle.driver_id = req.sender_id
         vehicle.name = vehicle_name.strip()
         await db.flush()
     else:
@@ -415,6 +418,7 @@ async def approve_pairing_request(
             device_id=req.device_id,
             name=vehicle_name.strip(),
             user_id=user_id,
+            driver_id=req.sender_id,
             pairing_code=generate_pairing_code(),
             share_code=generate_share_code(),
         )

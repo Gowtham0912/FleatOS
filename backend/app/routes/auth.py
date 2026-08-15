@@ -3,7 +3,10 @@ Authentication routes — register, login, and current user profile.
 """
 
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+import os
+import uuid
+import shutil
+from fastapi import APIRouter, Depends, HTTPException, status, Header, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -114,6 +117,37 @@ async def login(payload: UserLogin, db: AsyncSession = Depends(get_db)):
 @router.get("/me", response_model=UserResponse)
 async def get_me(user: User = Depends(require_current_user)):
     """Get current logged-in user profile."""
+    return UserResponse.model_validate(user)
+
+
+@router.patch("/me", response_model=UserResponse)
+async def update_me(
+    full_name: str = Form(None),
+    avatar: UploadFile = File(None),
+    user: User = Depends(require_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update current user profile (name and avatar)."""
+    if full_name is not None:
+        user.full_name = full_name.strip()
+        
+    if avatar is not None:
+        # Create avatars dir if not exists
+        avatars_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "avatars")
+        os.makedirs(avatars_dir, exist_ok=True)
+        
+        # Save file
+        ext = avatar.filename.split(".")[-1] if "." in avatar.filename else "jpg"
+        filename = f"{uuid.uuid4().hex}.{ext}"
+        filepath = os.path.join(avatars_dir, filename)
+        
+        with open(filepath, "wb") as buffer:
+            shutil.copyfileobj(avatar.file, buffer)
+            
+        user.avatar_url = f"/static/avatars/{filename}"
+        
+    await db.commit()
+    await db.refresh(user)
     return UserResponse.model_validate(user)
 
 

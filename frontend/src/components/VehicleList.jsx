@@ -66,7 +66,7 @@ export default function VehicleList({ vehicles, locations, selectedVehicle, onSe
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-32 text-slate-400">
-            <RefreshCw size={18} className="animate-spin mb-2 text-slate-400" />
+            <img src="/globe.svg" alt="Loading..." className="w-8 h-8 mb-2 opacity-70" />
             <p className="text-xs">Loading vehicles…</p>
           </div>
         ) : filtered.length === 0 ? (

@@ -45,6 +45,7 @@ class UserResponse(BaseModel):
     id: int
     email: str
     full_name: str
+    avatar_url: str | None = None
     created_at: datetime
     account_code: str
 
@@ -100,6 +101,15 @@ class VehicleCreate(BaseModel):
     device_id: str | None = Field(default=None, description="Optional pre-assigned device ID")
 
 
+class DriverInfo(BaseModel):
+    """Basic user info returned when they are driving/sending GPS."""
+    id: int
+    full_name: str
+    avatar_url: str | None = None
+    
+    model_config = {"from_attributes": True}
+
+
 class VehicleResponse(BaseModel):
     """Vehicle info returned to the client."""
 
@@ -110,6 +120,7 @@ class VehicleResponse(BaseModel):
     pairing_code: str
     share_code: str
     user_id: int | None = None
+    driver: DriverInfo | None = None
 
     model_config = {"from_attributes": True}
 

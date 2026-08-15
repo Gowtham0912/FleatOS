@@ -1,8 +1,14 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Activity, Navigation, X, QrCode, Copy, Check, LogOut, User as UserIcon, AlertCircle, Menu } from 'lucide-react'
+import { Activity, Navigation, X, QrCode, Copy, Check, LogOut, User as UserIcon, AlertCircle, Menu, Settings } from 'lucide-react'
 import { format } from 'date-fns'
 import { useAuth } from '../context/AuthContext'
+import SettingsModal from './SettingsModal'
+
+const BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.DEV ? '/api' : 'http://localhost:8000')
+).replace(/\/$/, '')
 
 // The backend host — live Render public backend
 // Removed BACKEND_HOST since URLs should now point to frontend
@@ -16,6 +22,9 @@ export default function TopBar({ title, lastMessage, onToggleMobileMenu }) {
   const [showLoginNotice, setShowLoginNotice] = useState(false)
   const [copiedCode, setCopiedCode] = useState(false)
   const [copiedUrl, setCopiedUrl] = useState(false)
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   const { user, logout } = useAuth()
 
   const lastTime = lastMessage?.timestamp
@@ -101,26 +110,57 @@ export default function TopBar({ title, lastMessage, onToggleMobileMenu }) {
           </button>
 
           {/* User Profile / Login (Rightmost Top Bar) */}
-          <div className="pl-2 md:pl-3 border-l border-slate-200">
+          <div className="pl-2 md:pl-3 border-l border-slate-200 relative">
             {user ? (
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-brand-primary/20 text-brand-primary flex items-center justify-center text-xs font-bold shrink-0">
-                    {user.full_name ? user.full_name[0].toUpperCase() : 'U'}
+              <>
+                <button
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  className="flex items-center gap-2 p-1 -m-1 rounded hover:bg-slate-50 transition-colors cursor-pointer text-left"
+                >
+                  <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-brand-primary/20 text-brand-primary flex items-center justify-center text-xs font-bold shrink-0 overflow-hidden">
+                    {user.avatar_url ? (
+                      <img src={`${BASE_URL}${user.avatar_url}`} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      user.full_name ? user.full_name[0].toUpperCase() : 'U'
+                    )}
                   </div>
-                  <div className="hidden md:block text-left">
+                  <div className="hidden md:block">
                     <p className="text-xs font-bold text-slate-900 leading-none">{user.full_name}</p>
                     <p className="text-[10px] text-slate-400 mt-0.5">{user.email}</p>
                   </div>
-                </div>
-                <button
-                  onClick={logout}
-                  title="Sign Out"
-                  className="text-slate-400 hover:text-rose-600 p-1.5 rounded hover:bg-slate-100 transition-colors cursor-pointer"
-                >
-                  <LogOut size={15} />
                 </button>
-              </div>
+
+                {showProfileMenu && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setShowProfileMenu(false)}
+                    />
+                    <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded border border-slate-200 shadow-lg z-50 py-1 animate-fade-in">
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false)
+                          setShowSettings(true)
+                        }}
+                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left"
+                      >
+                        <Settings size={15} />
+                        <span className="font-medium">Account Settings</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false)
+                          setShowLogoutConfirm(true)
+                        }}
+                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-rose-600 hover:bg-slate-50 transition-colors text-left"
+                      >
+                        <LogOut size={15} />
+                        <span className="font-medium">Sign Out</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </>
             ) : (
               <Link
                 to="/login"
@@ -267,6 +307,45 @@ export default function TopBar({ title, lastMessage, onToggleMobileMenu }) {
           </div>
         </div>
       )}
+
+      {/* ── Logout Confirmation Modal ────────────────────────────────────── */}
+      {showLogoutConfirm && (
+        <div
+          id="logout-confirm-backdrop"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/50 p-4 animate-fade-in"
+          onClick={(e) => e.target.id === 'logout-confirm-backdrop' && setShowLogoutConfirm(false)}
+        >
+          <div className="bg-white border border-slate-200 p-6 flex flex-col items-center gap-4 text-center shadow-xl rounded-xl max-w-xs w-full animate-slide-in">
+            <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center">
+              <LogOut size={24} />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-slate-900">Sign Out</h3>
+              <p className="text-xs text-slate-500 mt-1">Are you sure you want to sign out of your account?</p>
+            </div>
+            <div className="flex w-full gap-3 mt-2">
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowLogoutConfirm(false)
+                  logout()
+                }}
+                className="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs rounded shadow-sm transition-colors cursor-pointer"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Settings Modal ─────────────────────────────────────────────── */}
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
     </>
   )
 }

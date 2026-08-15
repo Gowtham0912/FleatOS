@@ -1,11 +1,13 @@
-import { useState, useCallback } from 'react'
-import { Map, List } from 'lucide-react'
+import { useState, useCallback, useEffect } from 'react'
+import { Map, List, Smartphone } from 'lucide-react'
 import FleetMap from '../components/FleetMap'
 import VehicleList from '../components/VehicleList'
 import TopBar from '../components/TopBar' // Unused, keeping import just in case, but let's remove it
 import EditVehicleModal from '../components/EditVehicleModal'
+import DeleteVehicleModal from '../components/DeleteVehicleModal'
 import { deleteVehicle, deleteUnlinkedVehicles } from '../api/fleetApi'
 import { motion } from 'framer-motion'
+import { useAuth } from '../context/AuthContext'
 
 /**
  * Dashboard page — simple clean live-tracking view with mobile tabs.
@@ -14,7 +16,30 @@ export default function Dashboard({ vehicles, locations, locationHistory, isLoad
   const [selectedVehicle, setSelectedVehicle] = useState(null)
   const [editingVehicle, setEditingVehicle] = useState(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [deletingVehicle, setDeletingVehicle] = useState(null)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('map') // 'map' | 'list'
+  
+  const { user } = useAuth()
+  const [ownerLocation, setOwnerLocation] = useState(null)
+
+  useEffect(() => {
+    if (navigator.geolocation && user) {
+      const watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          setOwnerLocation({
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+            timestamp: pos.timestamp
+          })
+        },
+        () => {},
+        { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
+      )
+      return () => navigator.geolocation.clearWatch(watchId)
+    }
+  }, [user])
 
   // Interpolated positions from AnimatedMarker for live coordinate display
   const [interpolatedPositions, setInterpolatedPositions] = useState({})
@@ -29,13 +54,14 @@ export default function Dashboard({ vehicles, locations, locationHistory, isLoad
     setActiveTab('map')
   }
 
-  const handleDelete = async (vehicleId) => {
+  const handleConfirmDelete = async (vehicleId) => {
     try {
       await deleteVehicle(vehicleId)
       if (selectedVehicle?.id === vehicleId) setSelectedVehicle(null)
       if (onRefresh) onRefresh()
     } catch (err) {
       alert('Failed to delete vehicle: ' + err.message)
+      throw err // So the modal keeps the loading state if we want to handle it
     }
   }
 
@@ -58,7 +84,7 @@ export default function Dashboard({ vehicles, locations, locationHistory, isLoad
   }
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
@@ -72,22 +98,20 @@ export default function Dashboard({ vehicles, locations, locationHistory, isLoad
         <div className="flex items-center bg-white p-1 rounded border border-slate-200 w-full max-w-xs shadow-sm">
           <button
             onClick={() => setActiveTab('map')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded text-xs font-semibold transition-colors ${
-              activeTab === 'map'
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded text-xs font-semibold transition-colors ${activeTab === 'map'
                 ? 'bg-brand-primary text-white shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
-            }`}
+              }`}
           >
             <Map size={14} />
             <span>Map View</span>
           </button>
           <button
             onClick={() => setActiveTab('list')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded text-xs font-semibold transition-colors ${
-              activeTab === 'list'
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded text-xs font-semibold transition-colors ${activeTab === 'list'
                 ? 'bg-brand-primary text-white shadow-sm'
                 : 'text-slate-600 hover:text-slate-900'
-            }`}
+              }`}
           >
             <List size={14} />
             <span>Devices ({vehicles.length})</span>
@@ -105,16 +129,20 @@ export default function Dashboard({ vehicles, locations, locationHistory, isLoad
             selectedVehicle={selectedVehicle}
             lastWsMessage={lastMessage}
             onInterpolatedPositions={handleInterpolatedPositions}
+            ownerLocation={ownerLocation}
+            ownerUser={user}
           />
 
           {/* Overlay: no vehicles hint */}
           {!isLoading && vehicles.length === 0 && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-4 z-10">
-              <div className="bg-white border border-slate-200 shadow-md rounded px-6 py-5 text-center max-w-xs pointer-events-auto">
-                <p className="text-3xl mb-2">📱</p>
-                <p className="text-sm font-bold text-slate-900 mb-1">No devices active</p>
-                <p className="text-xs text-slate-500">
-                  Click <strong className="text-brand-primary">Connect GPS</strong> above to start tracking.
+              <div className="bg-white/70 backdrop-blur-md border border-white/50 shadow-xl rounded-xl px-8 py-6 text-center max-w-sm pointer-events-auto flex flex-col items-center">
+                <div className="w-12 h-12 bg-[#17b385] text-white rounded-full flex items-center justify-center mb-4 shadow-sm">
+                  <Smartphone size={24} />
+                </div>
+                <p className="text-base font-bold text-slate-900 mb-1.5">No devices active</p>
+                <p className="text-sm text-slate-700">
+                  Click <button onClick={() => document.getElementById('connect-phone-btn')?.click()} className="text-brand-primary font-bold hover:underline cursor-pointer">Connect GPS</button> above to start tracking.
                 </p>
               </div>
             </div>
@@ -143,7 +171,7 @@ export default function Dashboard({ vehicles, locations, locationHistory, isLoad
         </div>
 
         {/* ── Vehicle list panel ────────────────────────────────────────── */}
-        <div className={`w-full md:w-80 h-full ${activeTab === 'list' ? 'block' : 'hidden md:block'}`}>
+        <div className={`w-full md:w-56 shrink-0 h-full ${activeTab === 'list' ? 'block' : 'hidden md:block'}`}>
           <VehicleList
             vehicles={vehicles}
             locations={locations}
@@ -153,7 +181,10 @@ export default function Dashboard({ vehicles, locations, locationHistory, isLoad
               setEditingVehicle(v)
               setIsEditModalOpen(true)
             }}
-            onDelete={handleDelete}
+            onDelete={(v) => {
+              setDeletingVehicle(v)
+              setIsDeleteModalOpen(true)
+            }}
             onClearUnlinked={handleClearUnlinked}
             onRefresh={onRefresh}
             isLoading={isLoading}
@@ -169,6 +200,16 @@ export default function Dashboard({ vehicles, locations, locationHistory, isLoad
         }}
         vehicle={editingVehicle}
         onVehicleUpdated={onRefresh}
+      />
+
+      <DeleteVehicleModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false)
+          setDeletingVehicle(null)
+        }}
+        vehicle={deletingVehicle}
+        onConfirm={handleConfirmDelete}
       />
     </motion.div>
   )

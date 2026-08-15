@@ -58,6 +58,7 @@ async def post_location(
         "vehicle_id": vehicle.id,
         "vehicle_name": vehicle.name,
         "vehicle_type": vehicle.vehicle_type,
+        "driver_avatar_url": vehicle.driver.avatar_url if vehicle.driver else None,
         "latitude": location.latitude,
         "longitude": location.longitude,
         "timestamp": location.timestamp.isoformat(),

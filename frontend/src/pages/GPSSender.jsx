@@ -3,13 +3,15 @@ import { useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Navigation, Loader2, XCircle, Play, Square, AlertCircle, Smartphone } from 'lucide-react'
 import { sendPairingRequest, checkPairingStatus, sendLocation } from '../api/fleetApi'
+import { useAuth } from '../context/AuthContext'
 
 const INTERVAL_MS = 1000
 const POLL_MS = 3000
 
 export default function GPSSender() {
+  const { user } = useAuth()
   const [searchParams] = useSearchParams()
-  const [code, setCode] = useState(searchParams.get('code') || localStorage.getItem('fleet_account_code') || '')
+  const [code, setCode] = useState(searchParams.get('code') || '')
   const [deviceId, setDeviceId] = useState('')
   const [status, setStatus] = useState('enter_code') // enter_code, pending, rejected, tracking
   const [isTracking, setIsTracking] = useState(false)
@@ -85,13 +87,18 @@ export default function GPSSender() {
     }
   }, [])
 
-  // Auto-submit code if it's in URL or localStorage, once deviceId is ready
+  // Auto-submit code if it's in URL
   useEffect(() => {
-    if (code && deviceId && status === 'enter_code') {
-      submitCode(code)
+    if (deviceId && status === 'enter_code') {
+      if (code) {
+        const urlCode = searchParams.get('code')
+        if (urlCode && urlCode === code) {
+          submitCode(code)
+        }
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deviceId]) // only run when deviceId is ready
+  }, [deviceId]) // run when deviceId is ready
 
   const startPolling = () => {
     if (pollIdRef.current) clearInterval(pollIdRef.current)
@@ -133,10 +140,15 @@ export default function GPSSender() {
       setError('Please enter an account code.')
       return
     }
-    setError(null)
     const upperCode = c.trim().toUpperCase()
+    
+    if (user && upperCode === user.account_code) {
+      setError("This is your own code! You are tracked by default on your dashboard.")
+      return
+    }
+
+    setError(null)
     setCode(upperCode)
-    localStorage.setItem('fleet_account_code', upperCode)
 
     try {
       const data = await sendPairingRequest(upperCode, deviceId)
@@ -318,7 +330,7 @@ export default function GPSSender() {
 
         {status === 'pending' && (
           <div className="bg-amber-50 rounded border border-amber-200 p-6 shadow-sm text-center">
-            <Loader2 size={32} className="text-amber-500 animate-spin mx-auto mb-3" />
+            <img src="/globe.svg" alt="Loading..." className="w-8 h-8 mx-auto mb-3 opacity-80" />
             <h2 className="text-sm font-bold text-amber-900 mb-1">Waiting for approval…</h2>
             <p className="text-xs text-amber-700">The account owner needs to approve this device.</p>
             <p className="text-[10px] text-amber-600 font-mono mt-4">Device ID: {deviceId}</p>

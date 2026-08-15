@@ -66,9 +66,12 @@ async def init_db():
             "UPDATE vehicles SET share_code = 'SHR-' || UPPER(SUBSTRING(MD5(RANDOM()::TEXT) FROM 1 FOR 6)) WHERE share_code IS NULL;"
         ))
 
-        # Add account_code to users table if missing
+        # Add account_code and avatar_url to users table if missing
         await conn.execute(text(
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS account_code VARCHAR(32);"
+        ))
+        await conn.execute(text(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(256);"
         ))
         # Backfill any users missing an account_code
         await conn.execute(text(

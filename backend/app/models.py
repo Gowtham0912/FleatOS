@@ -36,6 +36,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(128), unique=True, index=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(256), nullable=False)
     full_name: Mapped[str] = mapped_column(String(128), nullable=False, default="Fleet Owner")
+    avatar_url: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -88,8 +89,14 @@ class Vehicle(Base):
         String(32), unique=True, index=True, default=generate_share_code, nullable=False
     )
 
+    # Driver (sender) of the vehicle
+    driver_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+
     # Relationships
-    user: Mapped[Optional["User"]] = relationship("User", back_populates="vehicles")
+    user: Mapped[Optional["User"]] = relationship("User", foreign_keys=[user_id], back_populates="vehicles")
+    driver: Mapped[Optional["User"]] = relationship("User", foreign_keys=[driver_id])
     locations: Mapped[list["Location"]] = relationship(
         "Location", back_populates="vehicle", cascade="all, delete-orphan"
     )
@@ -135,6 +142,9 @@ class PairingRequest(Base):
         BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     device_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    sender_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     status: Mapped[str] = mapped_column(
         String(16), nullable=False, default="pending"
     )  # pending / approved / rejected
@@ -148,7 +158,8 @@ class PairingRequest(Base):
     )
 
     # Relationships
-    user: Mapped["User"] = relationship("User", back_populates="pairing_requests")
+    user: Mapped["User"] = relationship("User", foreign_keys=[user_id], back_populates="pairing_requests")
+    sender: Mapped[Optional["User"]] = relationship("User", foreign_keys=[sender_id])
     vehicle: Mapped[Optional["Vehicle"]] = relationship("Vehicle")
 
     def __repr__(self) -> str:

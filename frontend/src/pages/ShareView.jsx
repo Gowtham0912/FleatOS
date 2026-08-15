@@ -74,8 +74,9 @@ export default function ShareView() {
       {/* Main Content */}
       <div className="flex-1 relative">
         {isLoading && !vehicle ? (
-          <div className="flex items-center justify-center h-full text-slate-400">
-            <p className="text-sm">Loading shared vehicle location…</p>
+          <div className="flex-1 flex flex-col items-center justify-center bg-slate-50">
+             <img src="/globe.svg" alt="Loading..." className="w-12 h-12 mb-4 opacity-70" />
+             <p className="text-slate-500 font-medium text-sm">Connecting to GPS tracker...</p>
           </div>
         ) : error ? (
           <div className="flex flex-col items-center justify-center h-full p-4 text-center">

@@ -76,6 +76,25 @@ export async function fetchCurrentUser() {
 }
 
 /**
+ * Update current user profile.
+ * @param {FormData} formData
+ */
+export async function updateProfile(formData) {
+  const headers = getAuthHeaders();
+  delete headers['Content-Type']; // Let browser set multipart boundary
+  const res = await fetch(`${BASE_URL}/auth/me`, {
+    method: 'PATCH',
+    headers,
+    body: formData,
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || 'Failed to update profile')
+  }
+  return res.json()
+}
+
+/**
  * Fetch tracked vehicles.
  */
 export async function fetchVehicles() {
@@ -237,7 +256,7 @@ export async function rejectPairingRequest(requestId) {
 export async function sendPairingRequest(accountCode, deviceId) {
   const res = await fetch(`${BASE_URL}/pairing/request`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ account_code: accountCode, device_id: deviceId }),
   })
   if (!res.ok) {

@@ -42,8 +42,24 @@ const ICONS_SVG = {
   motorcycle: `<svg viewBox="0 0 24 24" width="100%" height="100%" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="17" r="3"/><circle cx="19" cy="17" r="3"/><path d="M5 14v-4l4-4 5 4"/><path d="M9 17h5"/><path d="M14 14l-3-4-2 3"/></svg>`,
   bus: `<svg viewBox="0 0 24 24" width="100%" height="100%" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"/><circle cx="7" cy="18" r="2"/><path d="M9 18h5"/><circle cx="16" cy="18" r="2"/></svg>`
 }
+const vehicleIcon = (isSelected, vehicleType = 'car', driverAvatarUrl = null) => {
+  if (driverAvatarUrl) {
+    return L.divIcon({
+      className: 'bg-transparent',
+      html: `
+        <div style="position: relative; width: 40px; height: 40px; transform: scale(${isSelected ? 1.2 : 1}); transition: transform 0.2s;">
+          <div class="vehicle-icon-inner" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; border: 2px solid ${isSelected ? '#2563EB' : '#0284C7'}; overflow: hidden; background: white; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); z-index: 2; display: flex; align-items: center; justify-content: center;">
+            <img src="${driverAvatarUrl}" style="width: 100%; height: 100%; object-fit: cover;" />
+          </div>
+          <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; background: ${isSelected ? '#2563EB' : '#0284C7'}; opacity: 0.4; animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite; z-index: 1;"></div>
+        </div>
+      `,
+      iconSize: [40, 40],
+      iconAnchor: [20, 20],
+      popupAnchor: [0, -20],
+    })
+  }
 
-const vehicleIcon = (isSelected, vehicleType = 'car') => {
   const svg = ICONS_SVG[vehicleType] || ICONS_SVG.car
   return L.divIcon({
     className: 'vehicle-marker-icon',
@@ -109,7 +125,8 @@ export default function AnimatedMarker({
   // Display state
   const currentPos = useRef(null)
 
-  const icon = useMemo(() => vehicleIcon(isSelected, vehicle.vehicle_type), [isSelected, vehicle.vehicle_type])
+  const driverAvatarUrl = vehicle.driver?.avatar_url || vehicle.driver_avatar_url
+  const icon = useMemo(() => vehicleIcon(isSelected, vehicle.vehicle_type, driverAvatarUrl), [isSelected, vehicle.vehicle_type, driverAvatarUrl])
 
   useEffect(() => {
     if (!location) return
