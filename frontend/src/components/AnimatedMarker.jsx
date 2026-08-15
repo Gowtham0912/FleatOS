@@ -49,9 +49,17 @@ const vehicleIcon = (isSelected, vehicleType = 'car', driverAvatarUrl = null) =>
       className: 'bg-transparent',
       html: `
         <div style="position: relative; width: 40px; height: 40px; transform: scale(${isSelected ? 1.2 : 1}); transition: transform 0.2s;">
-          <div class="vehicle-icon-inner" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; border: 2px solid ${isSelected ? '#2563EB' : '#0284C7'}; overflow: hidden; background: white; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); z-index: 2; display: flex; align-items: center; justify-content: center;">
+          
+          <!-- Direction indicator that will rotate -->
+          <div class="vehicle-icon-inner" style="position: absolute; top: -4px; left: -4px; right: -4px; bottom: -4px; z-index: 2; pointer-events: none;">
+            <div style="position: absolute; top: -2px; left: 50%; margin-left: -6px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 10px solid ${isSelected ? '#2563EB' : '#0284C7'}; drop-shadow(0 2px 2px rgba(0,0,0,0.3));"></div>
+          </div>
+
+          <!-- Static profile picture (does not rotate) -->
+          <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; border: 2px solid ${isSelected ? '#2563EB' : '#0284C7'}; overflow: hidden; background: white; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); z-index: 3; display: flex; align-items: center; justify-content: center;">
             <img src="${driverAvatarUrl}" style="width: 100%; height: 100%; object-fit: cover;" />
           </div>
+          
           <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; background: ${isSelected ? '#2563EB' : '#0284C7'}; opacity: 0.4; animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite; z-index: 1;"></div>
         </div>
       `,
