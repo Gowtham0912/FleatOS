@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { X, Plus, QrCode, Copy, Check, Share2, Smartphone } from 'lucide-react'
 import { createVehicle } from '../api/fleetApi'
 
-const BACKEND_HOST = 'http://localhost:8000'
+
 
 export default function AddVehicleModal({ isOpen, onClose, onVehicleAdded }) {
   const [name, setName] = useState('')
@@ -38,11 +38,11 @@ export default function AddVehicleModal({ isOpen, onClose, onVehicleAdded }) {
   }
 
   const gpsUrl = createdVehicle
-    ? `${BACKEND_HOST}/gps?code=${createdVehicle.pairing_code}`
+    ? `${window.location.origin}/gps?code=${createdVehicle.pairing_code}`
     : ''
 
   const shareUrl = createdVehicle
-    ? `${BACKEND_HOST}/share/${createdVehicle.share_code}`
+    ? `${window.location.origin}/share/${createdVehicle.share_code}`
     : ''
 
   const qrSrc = createdVehicle
@@ -66,7 +66,7 @@ export default function AddVehicleModal({ isOpen, onClose, onVehicleAdded }) {
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4"
       onClick={(e) => e.target.id === 'add-vehicle-backdrop' && handleClose()}
     >
-      <div className="relative bg-white rounded-xl border border-slate-200 p-6 shadow-xl max-w-md w-full animate-fade-in">
+      <div className="relative bg-white rounded border border-slate-200 p-6 shadow-xl max-w-md w-full animate-fade-in">
         <button
           onClick={handleClose}
           className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
@@ -77,14 +77,14 @@ export default function AddVehicleModal({ isOpen, onClose, onVehicleAdded }) {
         {!createdVehicle ? (
           <>
             <div className="flex items-center gap-2 mb-4 text-slate-900">
-              <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+              <div className="w-8 h-8 rounded bg-brand-primary/10 text-brand-primary flex items-center justify-center font-bold">
                 <Plus size={18} />
               </div>
               <h2 className="text-base font-bold">Add Personalized Vehicle</h2>
             </div>
 
             {error && (
-              <div className="mb-4 p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700">
+              <div className="mb-4 p-2.5 bg-rose-50 border border-rose-200 rounded text-xs text-rose-700">
                 {error}
               </div>
             )}
@@ -100,14 +100,14 @@ export default function AddVehicleModal({ isOpen, onClose, onVehicleAdded }) {
                   placeholder="e.g. My Personal Car, Delivery Van #1"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
+                  className="w-full bg-white border border-slate-200 rounded px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brand-primary transition-colors"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+                className="w-full py-2.5 bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold text-xs rounded shadow-sm transition-colors cursor-pointer disabled:opacity-50"
               >
                 {isSubmitting ? 'Creating vehicle…' : 'Generate Private Pairing Code & QR'}
               </button>
@@ -124,19 +124,19 @@ export default function AddVehicleModal({ isOpen, onClose, onVehicleAdded }) {
             </div>
 
             {/* QR Code */}
-            <div className="rounded-lg overflow-hidden border border-slate-200 bg-white p-2 shadow-inner">
+            <div className="rounded overflow-hidden border border-slate-200 bg-white p-2 shadow-inner">
               <img src={qrSrc} alt="Private QR Code" width={180} height={180} />
             </div>
 
             {/* Mobile Tracker Link */}
-            <div className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-center justify-between">
+            <div className="w-full bg-white border border-slate-200 rounded p-3 flex items-center justify-between">
               <div className="text-left truncate max-w-[240px]">
                 <p className="text-[10px] text-slate-400 font-bold uppercase">Mobile Tracker Link</p>
                 <p className="text-xs font-mono text-slate-700 truncate">{gpsUrl}</p>
               </div>
               <button
                 onClick={() => copyToClipboard(gpsUrl, 'code')}
-                className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 bg-white px-2.5 py-1 rounded border border-slate-200 shadow-2xs cursor-pointer font-semibold"
+                className="flex items-center gap-1 text-xs text-brand-primary hover:text-brand-primary/90 bg-brand-primary/10 px-2.5 py-1 rounded border border-brand-primary/30 shadow-2xs cursor-pointer font-semibold"
               >
                 {copiedCode ? <Check size={12} className="text-emerald-600" /> : <Smartphone size={12} />}
                 <span>{copiedCode ? 'Copied' : 'Copy Tracker'}</span>
@@ -144,7 +144,7 @@ export default function AddVehicleModal({ isOpen, onClose, onVehicleAdded }) {
             </div>
 
             {/* Share Map View Link */}
-            <div className="w-full bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-center justify-between">
+            <div className="w-full bg-white border border-slate-200 rounded p-3 flex items-center justify-between">
               <div className="text-left truncate max-w-[240px]">
                 <p className="text-[10px] text-slate-400 font-bold uppercase">Live Map View Link</p>
                 <p className="text-xs font-mono text-slate-700 truncate">{shareUrl}</p>
@@ -160,7 +160,7 @@ export default function AddVehicleModal({ isOpen, onClose, onVehicleAdded }) {
 
             <button
               onClick={handleClose}
-              className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg transition-colors cursor-pointer"
+              className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded transition-colors cursor-pointer"
             >
               Done & View on Map
             </button>

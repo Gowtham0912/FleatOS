@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Mail, Lock, AlertCircle, CheckCircle } from 'lucide-react'
 import { requestPasswordReset, resetPassword } from '../api/fleetApi'
 import OTPInput from '../components/OTPInput'
+import { motion } from 'framer-motion'
 
 export default function ForgotPassword() {
   const [step, setStep] = useState(1) // 1: Email, 2: OTP, 3: New Passwords
@@ -69,8 +70,14 @@ export default function ForgotPassword() {
   }
 
   return (
-    <div className="min-h-screen w-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm max-w-md w-full p-8">
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.3 }}
+      className="min-h-screen w-screen bg-white flex items-center justify-center p-4"
+    >
+      <div className="bg-white border border-slate-200 rounded shadow-sm max-w-md w-full p-8">
         <div className="flex flex-col items-center text-center mb-6">
           <div className="w-16 h-16 mb-2">
             <img src="/logo.png" alt="Fleet OS" className="w-full h-full object-contain" />
@@ -84,17 +91,17 @@ export default function ForgotPassword() {
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-lg flex items-center gap-2 text-xs text-rose-700">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded flex items-center gap-2 text-xs text-rose-700">
             <AlertCircle size={14} className="shrink-0" />
             <span>{error}</span>
-          </div>
+          </motion.div>
         )}
         
         {success && (
-          <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center gap-2 text-xs text-emerald-700">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="mb-4 p-3 bg-brand-accent/10 border border-brand-accent/30 rounded flex items-center gap-2 text-xs text-brand-accent">
             <CheckCircle size={14} className="shrink-0" />
             <span>{success}</span>
-          </div>
+          </motion.div>
         )}
 
         {step === 1 && (
@@ -109,7 +116,7 @@ export default function ForgotPassword() {
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
+                  className="w-full bg-white border border-slate-200 rounded pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brand-primary transition-colors"
                 />
               </div>
             </div>
@@ -117,7 +124,7 @@ export default function ForgotPassword() {
             <button
               type="submit"
               disabled={isSubmitting || !email}
-              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+              className="w-full py-2.5 bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold text-xs rounded shadow-sm transition-colors cursor-pointer disabled:opacity-50"
             >
               {isSubmitting ? 'Sending…' : 'Send Reset Code'}
             </button>
@@ -135,7 +142,7 @@ export default function ForgotPassword() {
             <button
               type="submit"
               disabled={code.length !== 6}
-              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50 mt-4"
+              className="w-full py-2.5 bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold text-xs rounded shadow-sm transition-colors cursor-pointer disabled:opacity-50 mt-4"
             >
               Next
             </button>
@@ -163,7 +170,7 @@ export default function ForgotPassword() {
                   placeholder="Minimum 6 characters"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
+                  className="w-full bg-white border border-slate-200 rounded pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brand-primary transition-colors"
                 />
               </div>
             </div>
@@ -179,7 +186,7 @@ export default function ForgotPassword() {
                   placeholder="Minimum 6 characters"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
+                  className="w-full bg-white border border-slate-200 rounded pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brand-primary transition-colors"
                 />
               </div>
             </div>
@@ -187,7 +194,7 @@ export default function ForgotPassword() {
             <button
               type="submit"
               disabled={isSubmitting || newPassword.length < 6}
-              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+              className="w-full py-2.5 bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold text-xs rounded shadow-sm transition-colors cursor-pointer disabled:opacity-50"
             >
               {isSubmitting ? 'Resetting…' : 'Reset Password'}
             </button>
@@ -204,11 +211,11 @@ export default function ForgotPassword() {
 
         <div className="mt-6 pt-4 border-t border-slate-100 text-center text-xs text-slate-500">
           Remembered your password?{' '}
-          <Link to="/login" className="text-blue-600 font-semibold hover:underline">
+          <Link to="/login" className="text-brand-primary font-semibold hover:underline">
             Sign In
           </Link>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }

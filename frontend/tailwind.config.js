@@ -8,6 +8,10 @@ export default {
     extend: {
       colors: {
         // Fleet brand palette
+        brand: {
+          primary: '#06355d',
+          accent: '#17b284',
+        },
         navy: {
           950: '#020818',
           900: '#0F172A',

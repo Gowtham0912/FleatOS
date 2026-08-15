@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, useLocation, Outlet } from 'react-router-dom'
+import { AnimatePresence } from 'framer-motion'
 import Sidebar from './components/Sidebar'
+import TopBar from './components/TopBar'
 import Dashboard from './pages/Dashboard'
 import Vehicles from './pages/Vehicles'
 import PairingRequests from './pages/PairingRequests'
@@ -8,6 +10,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import ForgotPassword from './pages/ForgotPassword'
 import ShareView from './pages/ShareView'
+import GPSSender from './pages/GPSSender'
 import { useWebSocket } from './hooks/useWebSocket'
 import { useVehicles } from './hooks/useVehicles'
 
@@ -22,6 +25,15 @@ export default function App() {
   const toggleMobileMenu = () => setIsMobileMenuOpen((prev) => !prev)
   const closeMobileMenu = () => setIsMobileMenuOpen(false)
 
+  const location = useLocation()
+
+  const getPageTitle = (pathname) => {
+    if (pathname.startsWith('/vehicles')) return 'Vehicles & Devices'
+    if (pathname.startsWith('/requests')) return 'Pairing Requests'
+    if (pathname.startsWith('/gps')) return 'GPS Sender'
+    return 'Live Map'
+  }
+
   return (
     <Routes>
       {/* Public Share View */}
@@ -34,9 +46,9 @@ export default function App() {
 
       {/* Main Dashboard Layout */}
       <Route
-        path="*"
+        path="/*"
         element={
-          <div className="flex h-screen w-screen overflow-hidden bg-slate-50 text-slate-800 relative">
+          <div className="flex h-screen w-screen overflow-hidden bg-white text-slate-800 relative">
             <Sidebar
               isConnected={isConnected}
               vehicleCount={vehicles.length}
@@ -51,47 +63,61 @@ export default function App() {
                 </div>
               )}
 
-              <Routes>
-                <Route
-                  path="/"
-                  element={
-                    <Dashboard
-                      vehicles={vehicles}
-                      locations={locations}
-                      locationHistory={locationHistory}
-                      isLoading={isLoading}
-                      lastMessage={lastMessage}
-                      isConnected={isConnected}
-                      onRefresh={refresh}
-                      onToggleMobileMenu={toggleMobileMenu}
-                    />
-                  }
-                />
-                <Route
-                  path="/vehicles"
-                  element={
-                    <Vehicles
-                      vehicles={vehicles}
-                      locations={locations}
-                      isLoading={isLoading}
-                      isConnected={isConnected}
-                      lastMessage={lastMessage}
-                      onToggleMobileMenu={toggleMobileMenu}
-                    />
-                  }
-                />
-                <Route
-                  path="/requests"
-                  element={
-                    <PairingRequests
-                      isConnected={isConnected}
-                      lastMessage={lastMessage}
-                      onRefresh={refresh}
-                      onToggleMobileMenu={toggleMobileMenu}
-                    />
-                  }
-                />
-              </Routes>
+              <TopBar
+                title={getPageTitle(location.pathname)}
+                isConnected={isConnected}
+                lastMessage={lastMessage}
+                onVehicleAdded={refresh}
+                onToggleMobileMenu={toggleMobileMenu}
+              />
+
+              <AnimatePresence mode="wait">
+                <Routes location={location} key={location.pathname}>
+                  <Route
+                    index
+                    element={
+                      <Dashboard
+                        vehicles={vehicles}
+                        locations={locations}
+                        locationHistory={locationHistory}
+                        isLoading={isLoading}
+                        lastMessage={lastMessage}
+                        isConnected={isConnected}
+                        onRefresh={refresh}
+                        onToggleMobileMenu={toggleMobileMenu}
+                      />
+                    }
+                  />
+                  <Route
+                    path="vehicles"
+                    element={
+                      <Vehicles
+                        vehicles={vehicles}
+                        locations={locations}
+                        isLoading={isLoading}
+                        isConnected={isConnected}
+                        lastMessage={lastMessage}
+                        onToggleMobileMenu={toggleMobileMenu}
+                      />
+                    }
+                  />
+                  <Route
+                    path="requests"
+                    element={
+                      <PairingRequests
+                        isConnected={isConnected}
+                        lastMessage={lastMessage}
+                        onRefresh={refresh}
+                        onToggleMobileMenu={toggleMobileMenu}
+                      />
+                    }
+                  />
+                  <Route
+                    path="gps"
+                    element={<GPSSender />}
+                  />
+                </Routes>
+              </AnimatePresence>
             </main>
           </div>
         }

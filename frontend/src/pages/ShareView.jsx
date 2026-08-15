@@ -4,6 +4,7 @@ import { Navigation, Truck, MapPin, Clock, AlertCircle } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import FleetMap from '../components/FleetMap'
 import { fetchSharedVehicle } from '../api/fleetApi'
+import { motion } from 'framer-motion'
 
 export default function ShareView() {
   const { shareCode } = useParams()
@@ -40,7 +41,12 @@ export default function ShareView() {
     : {}
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-slate-50">
+    <motion.div 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      exit={{ opacity: 0 }} 
+      className="flex flex-col h-screen w-screen bg-white"
+    >
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-3.5 bg-white border-b border-slate-200 shrink-0">
         <div className="flex items-center gap-3">
@@ -59,7 +65,7 @@ export default function ShareView() {
 
         <Link
           to="/login"
-          className="text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200"
+          className="text-xs font-semibold text-brand-primary hover:text-brand-primary/80 bg-brand-primary/10 px-3 py-1.5 rounded border border-brand-primary/30"
         >
           Sign In
         </Link>
@@ -88,9 +94,9 @@ export default function ShareView() {
             />
 
             {/* Vehicle info card overlay */}
-            <div className="absolute bottom-5 left-5 bg-white border border-slate-200 shadow-md rounded-xl p-4 max-w-sm w-full animate-slide-in">
+            <div className="absolute bottom-5 left-5 bg-white border border-slate-200 shadow-md rounded p-4 max-w-sm w-full animate-slide-in">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-7 h-7 rounded bg-blue-600 text-white flex items-center justify-center">
+                <div className="w-7 h-7 rounded bg-brand-primary text-white flex items-center justify-center">
                   <Truck size={14} />
                 </div>
                 <div>
@@ -102,7 +108,7 @@ export default function ShareView() {
               {vehicle.latest_location ? (
                 <div className="space-y-1 pt-2 border-t border-slate-100">
                   <div className="flex items-center gap-1.5 text-xs text-slate-700 font-mono">
-                    <MapPin size={12} className="text-blue-600" />
+                    <MapPin size={12} className="text-brand-primary" />
                     <span>
                       {vehicle.latest_location.latitude.toFixed(6)},{' '}
                       {vehicle.latest_location.longitude.toFixed(6)}
@@ -124,6 +130,6 @@ export default function ShareView() {
           </>
         )}
       </div>
-    </div>
+    </motion.div>
   )
 }

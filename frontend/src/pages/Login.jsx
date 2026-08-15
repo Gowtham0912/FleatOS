@@ -4,6 +4,7 @@ import { Lock, Mail, AlertCircle, CheckCircle } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { requestOtpLogin, verifyOtpLogin } from '../api/fleetApi'
 import OTPInput from '../components/OTPInput'
+import { motion } from 'framer-motion'
 
 export default function Login() {
   const [mode, setMode] = useState('password') // 'password' or 'otp'
@@ -72,8 +73,14 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen w-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm max-w-md w-full p-8">
+    <motion.div 
+      initial={{ opacity: 0, y: 10 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.3 }}
+      className="min-h-screen w-screen bg-white flex items-center justify-center p-4"
+    >
+      <div className="bg-white border border-slate-200 rounded shadow-sm max-w-md w-full p-8">
         {/* Header */}
         <div className="flex flex-col items-center text-center mb-6">
           <div className="w-16 h-16 mb-2">
@@ -84,17 +91,17 @@ export default function Login() {
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-lg flex items-center gap-2 text-xs text-rose-700">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded flex items-center gap-2 text-xs text-rose-700">
             <AlertCircle size={14} className="shrink-0" />
             <span>{error}</span>
-          </div>
+          </motion.div>
         )}
         
         {success && (
-          <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center gap-2 text-xs text-emerald-700">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="mb-4 p-3 bg-brand-accent/10 border border-brand-accent/30 rounded flex items-center gap-2 text-xs text-brand-accent">
             <CheckCircle size={14} className="shrink-0" />
             <span>{success}</span>
-          </div>
+          </motion.div>
         )}
 
         {/* Password Mode */}
@@ -110,7 +117,7 @@ export default function Login() {
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
+                  className="w-full bg-white border border-slate-200 rounded pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brand-primary transition-colors"
                 />
               </div>
             </div>
@@ -118,7 +125,7 @@ export default function Login() {
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-xs font-semibold text-slate-700">Password</label>
-                <Link to="/forgot-password" className="text-[10px] text-blue-600 hover:underline">Forgot password?</Link>
+                <Link to="/forgot-password" className="text-[10px] text-brand-primary hover:underline">Forgot password?</Link>
               </div>
               <div className="relative">
                 <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -128,7 +135,7 @@ export default function Login() {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
+                  className="w-full bg-white border border-slate-200 rounded pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brand-primary transition-colors"
                 />
               </div>
             </div>
@@ -136,7 +143,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+              className="w-full py-2.5 bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold text-xs rounded shadow-sm transition-colors cursor-pointer disabled:opacity-50"
             >
               {isSubmitting ? 'Signing in…' : 'Sign In'}
             </button>
@@ -156,7 +163,7 @@ export default function Login() {
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
+                  className="w-full bg-white border border-slate-200 rounded pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brand-primary transition-colors"
                 />
               </div>
             </div>
@@ -164,7 +171,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={isSubmitting || !email}
-              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+              className="w-full py-2.5 bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold text-xs rounded shadow-sm transition-colors cursor-pointer disabled:opacity-50"
             >
               {isSubmitting ? 'Sending Code…' : 'Send Login Code'}
             </button>
@@ -182,7 +189,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={isSubmitting || code.length !== 6}
-              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50 mt-4"
+              className="w-full py-2.5 bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold text-xs rounded shadow-sm transition-colors cursor-pointer disabled:opacity-50 mt-4"
             >
               {isSubmitting ? 'Verifying…' : 'Verify & Sign In'}
             </button>
@@ -202,11 +209,11 @@ export default function Login() {
 
         <div className="mt-2 text-center text-xs text-slate-500">
           Don't have an account?{' '}
-          <Link to="/register" className="text-blue-600 font-semibold hover:underline">
+          <Link to="/register" className="text-brand-primary font-semibold hover:underline">
             Create Account
           </Link>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }

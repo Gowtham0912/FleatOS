@@ -54,7 +54,7 @@ export default function EditVehicleModal({ isOpen, onClose, vehicle, onVehicleUp
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4"
       onClick={(e) => e.target.id === 'edit-vehicle-backdrop' && handleClose()}
     >
-      <div className="relative bg-white rounded-xl border border-slate-200 p-6 shadow-xl max-w-md w-full animate-fade-in">
+      <div className="relative bg-white rounded border border-slate-200 p-6 shadow-xl max-w-md w-full animate-fade-in">
         <button
           onClick={handleClose}
           className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
@@ -63,14 +63,14 @@ export default function EditVehicleModal({ isOpen, onClose, vehicle, onVehicleUp
         </button>
 
         <div className="flex items-center gap-2 mb-4 text-slate-900">
-          <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+          <div className="w-8 h-8 rounded bg-brand-primary/10 text-brand-primary flex items-center justify-center font-bold">
             <Settings size={18} />
           </div>
           <h2 className="text-base font-bold">Manage Vehicle</h2>
         </div>
 
         {error && (
-          <div className="mb-4 p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700">
+          <div className="mb-4 p-2.5 bg-rose-50 border border-rose-200 rounded text-xs text-rose-700">
             {error}
           </div>
         )}
@@ -86,7 +86,7 @@ export default function EditVehicleModal({ isOpen, onClose, vehicle, onVehicleUp
               placeholder="e.g. My Personal Car"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
+              className="w-full bg-white border border-slate-200 rounded px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brand-primary transition-colors"
             />
           </div>
 
@@ -100,9 +100,9 @@ export default function EditVehicleModal({ isOpen, onClose, vehicle, onVehicleUp
                   key={id}
                   type="button"
                   onClick={() => setType(id)}
-                  className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border transition-all cursor-pointer ${
+                  className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded border transition-all cursor-pointer ${
                     type === id
-                      ? 'bg-blue-50 border-blue-500 text-blue-700 shadow-sm'
+                      ? 'bg-brand-primary/10 border-brand-primary text-brand-primary shadow-sm'
                       : 'bg-white border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-500'
                   }`}
                 >
@@ -116,7 +116,7 @@ export default function EditVehicleModal({ isOpen, onClose, vehicle, onVehicleUp
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-2.5 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg shadow-sm transition-colors cursor-pointer disabled:opacity-50 mt-2"
+            className="w-full py-2.5 flex items-center justify-center gap-2 bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold text-xs rounded shadow-sm transition-colors cursor-pointer disabled:opacity-50 mt-2"
           >
             <Save size={14} />
             {isSubmitting ? 'Saving changes…' : 'Save Changes'}

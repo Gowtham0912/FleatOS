@@ -1,19 +1,21 @@
 import { Truck, MapPin, Clock, Smartphone } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
-import TopBar from '../components/TopBar'
+
+import { motion } from 'framer-motion'
 
 /**
  * Vehicles page — simple clean table view of all tracked devices.
  */
 export default function Vehicles({ vehicles, locations, isLoading, isConnected, lastMessage, onToggleMobileMenu }) {
   return (
-    <div className="flex flex-col flex-1 min-h-0 bg-slate-50">
-      <TopBar
-        title="Vehicles & Devices"
-        isConnected={isConnected}
-        lastMessage={lastMessage}
-        onToggleMobileMenu={onToggleMobileMenu}
-      />
+    <motion.div 
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      transition={{ duration: 0.2 }}
+      className="flex flex-col flex-1 min-h-0 bg-white"
+    >
+
 
       <div className="flex-1 overflow-y-auto p-4 md:p-6 max-w-7xl w-full mx-auto">
         {isLoading ? (
@@ -21,7 +23,7 @@ export default function Vehicles({ vehicles, locations, isLoading, isConnected, 
             <p className="text-sm">Loading vehicles list…</p>
           </div>
         ) : vehicles.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 text-slate-400 text-center bg-white border border-slate-200 rounded-xl p-8 shadow-sm">
+          <div className="flex flex-col items-center justify-center h-48 text-slate-400 text-center bg-white border border-slate-200 rounded p-8 shadow-sm">
             <Truck size={36} className="mb-2 text-slate-300" />
             <p className="text-sm font-semibold text-slate-700">No vehicles registered</p>
             <p className="text-xs text-slate-400 mt-1">Connect your mobile phone using the QR code to start tracking.</p>
@@ -37,9 +39,9 @@ export default function Vehicles({ vehicles, locations, isLoading, isConnected, 
                     Date.now() - new Date(l.timestamp).getTime() < 5 * 60 * 1000
                   ).length, icon: Clock },
               ].map(({ label, value, icon: Icon }) => (
-                <div key={label} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                <div key={label} className="bg-white border border-slate-200 rounded p-4 shadow-sm hover:border-brand-primary transition-colors">
                   <div className="flex items-center gap-2 mb-1.5">
-                    <Icon size={14} className="text-blue-600" />
+                    <Icon size={14} className="text-brand-primary" />
                     <p className="text-xs font-medium text-slate-500">{label}</p>
                   </div>
                   <p className="text-xl md:text-2xl font-bold text-slate-900">{value}</p>
@@ -48,7 +50,7 @@ export default function Vehicles({ vehicles, locations, isLoading, isConnected, 
             </div>
 
             {/* ── Table ──────────────────────────────────────────────── */}
-            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="bg-white border border-slate-200 rounded shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left min-w-[600px]">
                   <thead>
@@ -73,7 +75,7 @@ export default function Vehicles({ vehicles, locations, isLoading, isConnected, 
                           {/* Name */}
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
-                              <Truck size={14} className="text-blue-600 shrink-0" />
+                              <Truck size={14} className="text-brand-primary shrink-0" />
                               <span className="font-semibold text-slate-900">{v.name}</span>
                             </div>
                           </td>
@@ -102,9 +104,9 @@ export default function Vehicles({ vehicles, locations, isLoading, isConnected, 
 
                           {/* Status */}
                           <td className="px-4 py-3 whitespace-nowrap">
-                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-medium ${
                               isActive
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                ? 'bg-brand-accent/10 text-brand-accent border border-brand-accent/30'
                                 : loc
                                 ? 'bg-amber-50 text-amber-700 border border-amber-200'
                                 : 'bg-slate-100 text-slate-500 border border-slate-200'
@@ -123,6 +125,6 @@ export default function Vehicles({ vehicles, locations, isLoading, isConnected, 
           </>
         )}
       </div>
-    </div>
+    </motion.div>
   )
 }

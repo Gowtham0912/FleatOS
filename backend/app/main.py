@@ -67,10 +67,7 @@ def create_app() -> FastAPI:
     app.include_router(pairing.router)
     app.include_router(websocket.router)
 
-    @app.get("/gps", include_in_schema=False)
-    async def gps_sender_page():
-        """Serve the phone GPS sender page at /gps"""
-        return FileResponse(os.path.join(STATIC_DIR, "gps_sender.html"))
+
 
     @app.get("/simulator", include_in_schema=False)
     async def simulator_page():
@@ -87,8 +84,7 @@ def create_app() -> FastAPI:
         return {
             "message": "Fleet Tracking API is running! 🚀",
             "docs": "/docs",
-            "health": "/health",
-            "gps_tracker": "/gps"
+            "health": "/health"
         }
 
     @app.get("/health", tags=["Health"])

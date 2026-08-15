@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Smartphone, Check, X, Clock, Shield, RefreshCw } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
-import TopBar from '../components/TopBar'
+
 import { fetchPairingRequests, approvePairingRequest, rejectPairingRequest } from '../api/fleetApi'
+import { motion } from 'framer-motion'
 
 /**
  * PairingRequests page — shows pending device pairing requests
@@ -68,19 +69,20 @@ export default function PairingRequests({ isConnected, lastMessage, onRefresh, o
   const pastRequests = requests.filter(r => r.status !== 'pending')
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 bg-slate-50">
-      <TopBar
-        title="Pairing Requests"
-        isConnected={isConnected}
-        lastMessage={lastMessage}
-        onToggleMobileMenu={onToggleMobileMenu}
-      />
+    <motion.div 
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -20 }}
+      transition={{ duration: 0.2 }}
+      className="flex flex-col flex-1 min-h-0 bg-white"
+    >
+
 
       <div className="flex-1 overflow-y-auto p-4 md:p-6 max-w-4xl w-full mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between gap-3 mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded bg-brand-primary/10 text-brand-primary flex items-center justify-center shrink-0">
               <Shield size={20} />
             </div>
             <div>
@@ -90,7 +92,7 @@ export default function PairingRequests({ isConnected, lastMessage, onRefresh, o
           </div>
           <button
             onClick={loadRequests}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold
                        bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer shadow-xs shrink-0"
           >
             <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
@@ -99,7 +101,7 @@ export default function PairingRequests({ isConnected, lastMessage, onRefresh, o
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700">
+          <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded text-xs text-rose-700">
             ⚠ {error}
           </div>
         )}
@@ -115,11 +117,11 @@ export default function PairingRequests({ isConnected, lastMessage, onRefresh, o
               {pendingRequests.map((req) => (
                 <div
                   key={req.id}
-                  className="bg-white border border-amber-200 rounded-xl p-4 shadow-xs animate-fade-in"
+                  className="bg-white border border-amber-200 rounded p-4 shadow-sm animate-fade-in"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                      <div className="w-9 h-9 rounded bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
                         <Smartphone size={18} />
                       </div>
                       <div>
@@ -140,13 +142,13 @@ export default function PairingRequests({ isConnected, lastMessage, onRefresh, o
                           onChange={(e) => setVehicleName(e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && handleApprove(req.id)}
                           autoFocus
-                          className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-900
-                                     placeholder-slate-400 focus:outline-none focus:border-blue-500 flex-1 sm:w-44"
+                          className="bg-white border border-slate-200 rounded px-2.5 py-1.5 text-xs text-slate-900
+                                     placeholder-slate-400 focus:outline-none focus:border-brand-primary flex-1 sm:w-44"
                         />
                         <button
                           onClick={() => handleApprove(req.id)}
                           disabled={!vehicleName.trim() || processing === req.id}
-                          className="p-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700
+                          className="p-1.5 rounded bg-brand-accent text-white hover:bg-brand-accent/90
                                      disabled:opacity-50 cursor-pointer transition-colors shrink-0"
                           title="Confirm approve"
                         >
@@ -154,7 +156,7 @@ export default function PairingRequests({ isConnected, lastMessage, onRefresh, o
                         </button>
                         <button
                           onClick={() => { setApproveId(null); setVehicleName('') }}
-                          className="p-1.5 rounded-lg bg-slate-200 text-slate-600 hover:bg-slate-300
+                          className="p-1.5 rounded bg-slate-200 text-slate-600 hover:bg-slate-300
                                      cursor-pointer transition-colors shrink-0"
                           title="Cancel"
                         >
@@ -166,9 +168,9 @@ export default function PairingRequests({ isConnected, lastMessage, onRefresh, o
                         <button
                           onClick={() => { setApproveId(req.id); setVehicleName('') }}
                           disabled={processing === req.id}
-                          className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold
-                                     bg-emerald-600 text-white hover:bg-emerald-700 transition-colors
-                                     disabled:opacity-50 cursor-pointer shadow-xs"
+                          className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold
+                                     bg-brand-accent text-white hover:bg-brand-accent/90 transition-colors
+                                     disabled:opacity-50 cursor-pointer shadow-sm"
                         >
                           <Check size={13} />
                           Approve
@@ -176,7 +178,7 @@ export default function PairingRequests({ isConnected, lastMessage, onRefresh, o
                         <button
                           onClick={() => handleReject(req.id)}
                           disabled={processing === req.id}
-                          className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold
+                          className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold
                                      bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors
                                      disabled:opacity-50 cursor-pointer"
                         >
@@ -194,8 +196,8 @@ export default function PairingRequests({ isConnected, lastMessage, onRefresh, o
 
         {/* Empty state */}
         {!isLoading && pendingRequests.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 text-center bg-white border border-slate-200 rounded-xl shadow-sm mb-8">
-            <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3">
+          <div className="flex flex-col items-center justify-center py-12 text-center bg-white border border-slate-200 rounded shadow-sm mb-8">
+            <div className="w-12 h-12 rounded bg-brand-accent/10 text-brand-accent flex items-center justify-center mb-3">
               <Check size={24} />
             </div>
             <p className="text-sm font-bold text-slate-900 mb-1">No pending requests</p>
@@ -215,9 +217,9 @@ export default function PairingRequests({ isConnected, lastMessage, onRefresh, o
               {pastRequests.map((req) => (
                 <div
                   key={req.id}
-                  className={`bg-white border rounded-xl p-3 shadow-sm flex items-center justify-between ${
+                  className={`bg-white border rounded p-3 shadow-sm flex items-center justify-between ${
                     req.status === 'approved'
-                      ? 'border-emerald-200'
+                      ? 'border-brand-accent/30'
                       : 'border-slate-200'
                   }`}
                 >
@@ -230,9 +232,9 @@ export default function PairingRequests({ isConnected, lastMessage, onRefresh, o
                       </p>
                     </div>
                   </div>
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
                     req.status === 'approved'
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      ? 'bg-brand-accent/10 text-brand-accent border border-brand-accent/30'
                       : 'bg-rose-50 text-rose-700 border border-rose-200'
                   }`}>
                     {req.status === 'approved' ? <Check size={10} /> : <X size={10} />}
@@ -244,6 +246,6 @@ export default function PairingRequests({ isConnected, lastMessage, onRefresh, o
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   )
 }

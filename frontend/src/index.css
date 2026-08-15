@@ -16,16 +16,16 @@ html, body, #root {
 }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: #F8FAFC;
+  font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+  background-color: #FFFFFF;
   color: #0F172A;
   -webkit-font-smoothing: antialiased;
 }
 
 /* ── Leaflet map standard clean theme ───────────────────────────────────── */
 .leaflet-container {
-  background: #E2E8F0 !important;
-  font-family: 'Inter', sans-serif;
+  background: #F1F5F9 !important;
+  font-family: 'Poppins', sans-serif;
   z-index: 0 !important;
 }
 
@@ -46,7 +46,7 @@ body {
   background: #FFFFFF;
   color: #0F172A;
   border: 1px solid #E2E8F0;
-  border-radius: 8px;
+  border-radius: 4px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
@@ -56,32 +56,32 @@ body {
 
 .leaflet-popup-content {
   margin: 12px 16px;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Poppins', sans-serif;
 }
 
 .leaflet-control-zoom a {
   background: #FFFFFF !important;
-  color: #334155 !important;
-  border-color: #CBD5E1 !important;
-  border-radius: 6px !important;
+  color: #06355d !important;
+  border-color: #E2E8F0 !important;
+  border-radius: 4px !important;
 }
 
 .leaflet-control-zoom a:hover {
-  background: #F1F5F9 !important;
-  color: #0F172A !important;
+  background: #F8FAFC !important;
+  color: #17b284 !important;
 }
 
 /* ── Scrollbar ──────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #F1F5F9; }
-::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+::-webkit-scrollbar-track { background: #FFFFFF; }
+::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
 
 /* ── Simple UI utility classes ──────────────────────────────────────────── */
 .simple-card {
   background: #FFFFFF;
   border: 1px solid #E2E8F0;
-  border-radius: 10px;
+  border-radius: 4px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 

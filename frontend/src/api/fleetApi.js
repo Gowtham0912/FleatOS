@@ -231,6 +231,53 @@ export async function rejectPairingRequest(requestId) {
   return res.json()
 }
 
+/**
+ * Send a pairing request from a device.
+ */
+export async function sendPairingRequest(accountCode, deviceId) {
+  const res = await fetch(`${BASE_URL}/pairing/request`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ account_code: accountCode, device_id: deviceId }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || 'Failed to send pairing request')
+  }
+  return res.json()
+}
+
+/**
+ * Check the status of a pairing request for a given device ID.
+ */
+export async function checkPairingStatus(deviceId) {
+  const res = await fetch(`${BASE_URL}/pairing/check/${deviceId}`)
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || 'Failed to check pairing status')
+  }
+  return res.json()
+}
+
+// ── Location Tracking API ──────────────────────────────────────────────────
+
+/**
+ * Send a GPS location payload to the backend.
+ * Payload should include: device_id, latitude, longitude, timestamp (optional: account_code)
+ */
+export async function sendLocation(payload) {
+  const res = await fetch(`${BASE_URL}/location`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || 'Failed to send location')
+  }
+  return res.json()
+}
+
 // ── OTP & Password Reset API ───────────────────────────────────────────────
 
 export async function requestPasswordReset(email) {

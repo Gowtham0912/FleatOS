@@ -32,7 +32,7 @@ export default function VehicleList({ vehicles, locations, selectedVehicle, onSe
             {unlinkedCount > 0 && onClearUnlinked && (
               <button
                 onClick={onClearUnlinked}
-                className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 transition-colors"
+                className="p-1.5 rounded text-rose-600 hover:bg-rose-50 transition-colors"
                 title={`Clean up ${unlinkedCount} unlinked guest devices`}
               >
                 <Trash2 size={14} />
@@ -41,7 +41,7 @@ export default function VehicleList({ vehicles, locations, selectedVehicle, onSe
             <button
               onClick={onRefresh}
               disabled={isLoading}
-              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+              className="p-1.5 rounded text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
               title="Refresh list"
             >
               <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
@@ -57,7 +57,7 @@ export default function VehicleList({ vehicles, locations, selectedVehicle, onSe
             placeholder="Search name or ID…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
+            className="w-full bg-slate-50 border border-slate-200 rounded pl-8 pr-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brand-primary focus:bg-white transition-colors"
           />
         </div>
       </div>

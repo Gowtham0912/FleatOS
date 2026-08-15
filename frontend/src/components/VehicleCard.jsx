@@ -47,9 +47,9 @@ export default function VehicleCard({ vehicle, location, isSelected, onSelect, o
   return (
     <div
       onClick={() => onSelect(vehicle)}
-      className={`w-full text-left p-3.5 rounded-lg border transition-all cursor-pointer group ${
+      className={`w-full text-left p-3.5 rounded border transition-all cursor-pointer group ${
         isSelected
-          ? 'bg-blue-50/70 border-blue-500 shadow-sm'
+          ? 'bg-brand-primary/10 border-brand-primary shadow-sm'
           : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'
       }`}
     >
@@ -57,7 +57,7 @@ export default function VehicleCard({ vehicle, location, isSelected, onSelect, o
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-2 overflow-hidden">
           <div className={`w-6 h-6 rounded flex items-center justify-center shrink-0 ${
-            isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'
+            isSelected ? 'bg-brand-primary text-white' : 'bg-slate-100 text-slate-600'
           }`}>
             {getVehicleIcon(vehicle.vehicle_type)}
           </div>
@@ -73,7 +73,7 @@ export default function VehicleCard({ vehicle, location, isSelected, onSelect, o
               <button
                 onClick={handleEdit}
                 title="Edit Vehicle"
-                className="text-slate-300 hover:text-blue-600 p-1 rounded transition-colors cursor-pointer"
+                className="text-slate-300 hover:text-brand-primary p-1 rounded transition-colors cursor-pointer"
               >
                 <Edit2 size={13} />
               </button>
@@ -98,7 +98,7 @@ export default function VehicleCard({ vehicle, location, isSelected, onSelect, o
       {hasLocation ? (
         <div className="space-y-1 pt-1 border-t border-slate-100">
           <div className="flex items-center gap-1.5 text-[11px] text-slate-700">
-            <MapPin size={11} className="text-blue-600 shrink-0" />
+            <MapPin size={11} className="text-brand-primary shrink-0" />
             <span className="font-mono">
               {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
             </span>

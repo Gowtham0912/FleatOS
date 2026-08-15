@@ -31,6 +31,7 @@ export default function Sidebar({ isConnected, vehicleCount, isOpen, onClose }) 
     { to: '/',           icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/vehicles',   icon: Truck,           label: 'Vehicles'  },
     { to: '/requests',   icon: Shield,          label: 'Requests', badge: pendingCount },
+    { to: '/gps',        icon: Navigation,      label: 'GPS Sender' },
   ]
 
   const sidebarContent = (
@@ -49,7 +50,7 @@ export default function Sidebar({ isConnected, vehicleCount, isOpen, onClose }) 
         {/* Mobile close button */}
         <button
           onClick={onClose}
-          className="md:hidden p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+          className="md:hidden p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
           title="Close menu"
         >
           <X size={18} />
@@ -65,9 +66,9 @@ export default function Sidebar({ isConnected, vehicleCount, isOpen, onClose }) 
             end={to === '/'}
             onClick={onClose}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              `flex items-center gap-3 px-3 py-2.5 rounded text-sm font-medium transition-colors ${
                 isActive
-                  ? 'bg-blue-50 text-blue-600 font-semibold'
+                  ? 'bg-brand-primary/10 text-brand-primary font-semibold'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`
             }
@@ -99,7 +100,7 @@ export default function Sidebar({ isConnected, vehicleCount, isOpen, onClose }) 
           <span className={`status-dot ${isConnected ? 'active' : 'inactive'}`} />
         </div>
 
-        <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+        <div className="bg-slate-50 border border-slate-200 rounded p-2.5">
           <p className="text-[11px] text-slate-500 font-medium">Tracked Devices</p>
           <p className="text-base font-bold text-slate-900 mt-0.5">{vehicleCount}</p>
         </div>
