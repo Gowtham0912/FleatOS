@@ -45,7 +45,7 @@ export default function ShareView() {
       initial={{ opacity: 0 }} 
       animate={{ opacity: 1 }} 
       exit={{ opacity: 0 }} 
-      className="flex flex-col h-screen w-screen bg-white"
+      className="flex flex-col fixed inset-0 bg-white"
     >
       {/* Header */}
       <header className="flex items-center justify-between px-6 py-3.5 bg-white border-b border-slate-200 shrink-0">
