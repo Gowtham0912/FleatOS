@@ -3,14 +3,21 @@ Application configuration — reads from environment variables with sane default
 """
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-
+from pydantic import field_validator
 class Settings(BaseSettings):
     # ── Database ───────────────────────────────────────────────────────────────
     # asyncpg-based URL for SQLAlchemy async engine
     DATABASE_URL: str = (
         "postgresql+asyncpg://fleet_user:fleet_pass@localhost:5432/fleet_db"
     )
+
+    @field_validator("DATABASE_URL", mode="before")
+    def fix_database_url(cls, v: str) -> str:
+        if v and v.startswith("postgres://"):
+            return v.replace("postgres://", "postgresql+asyncpg://", 1)
+        if v and v.startswith("postgresql://"):
+            return v.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return v
 
     # ── Server ─────────────────────────────────────────────────────────────────
     HOST: str = "0.0.0.0"
