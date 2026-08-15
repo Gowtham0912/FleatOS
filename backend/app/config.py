@@ -31,6 +31,20 @@ class Settings(BaseSettings):
         "http://localhost:3000",
     ]
 
+    @field_validator("ALLOWED_ORIGINS", mode="before")
+    def parse_allowed_origins(cls, v):
+        if isinstance(v, str):
+            # If the env var is a plain string but not valid JSON, split by comma
+            import json
+            try:
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    return parsed
+            except json.JSONDecodeError:
+                pass
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        return v
+
     # ── Tracking & OSRM ────────────────────────────────────────────────────────
     OSRM_BASE_URL: str = "http://router.project-osrm.org"
     MAP_MATCHING_ENABLED: bool = True
