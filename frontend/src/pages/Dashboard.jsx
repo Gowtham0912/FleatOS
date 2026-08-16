@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Map, List, Smartphone } from 'lucide-react'
 import FleetMap from '../components/FleetMap'
 import VehicleList from '../components/VehicleList'
@@ -13,7 +14,23 @@ import { useAuth } from '../context/AuthContext'
  * Dashboard page — simple clean live-tracking view with mobile tabs.
  */
 export default function Dashboard({ vehicles, locations, locationHistory, isLoading, lastMessage, isConnected, onRefresh, onToggleMobileMenu }) {
+  const routerLocation = useLocation()
+  const navigate = useNavigate()
+  
   const [selectedVehicle, setSelectedVehicle] = useState(null)
+  
+  // Set selected vehicle if passed via navigation state
+  useEffect(() => {
+    if (routerLocation.state?.selectedVehicleId && vehicles.length > 0) {
+      const v = vehicles.find(v => v.id === routerLocation.state.selectedVehicleId)
+      if (v && (!selectedVehicle || selectedVehicle.id !== v.id)) {
+        setSelectedVehicle(v)
+        // Clear state so it doesn't re-trigger on refresh
+        navigate(routerLocation.pathname, { replace: true, state: {} })
+      }
+    }
+  }, [routerLocation.state, vehicles, navigate, routerLocation.pathname, selectedVehicle])
+
   const [editingVehicle, setEditingVehicle] = useState(null)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [deletingVehicle, setDeletingVehicle] = useState(null)
@@ -85,22 +102,22 @@ export default function Dashboard({ vehicles, locations, locationHistory, isLoad
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="flex flex-col flex-1 min-h-0 bg-white"
+      className="flex flex-col flex-1 min-h-0 bg-white dark:bg-slate-950 transition-colors"
     >
 
 
       {/* ── Mobile View Toggle Pill (visible only on < md screens) ────────────── */}
-      <div className="md:hidden flex items-center justify-center p-2 bg-white border-b border-slate-200 shrink-0">
-        <div className="flex items-center bg-white p-1 rounded border border-slate-200 w-full max-w-xs shadow-sm">
+      <div className="md:hidden flex items-center justify-center p-2 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0 transition-colors">
+        <div className="flex items-center bg-white dark:bg-slate-950 p-1 rounded border border-slate-200 dark:border-slate-800 w-full max-w-xs shadow-sm transition-colors">
           <button
             onClick={() => setActiveTab('map')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded text-xs font-semibold transition-colors ${activeTab === 'map'
-                ? 'bg-brand-primary text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded text-xs font-semibold transition-colors cursor-pointer ${activeTab === 'map'
+                ? 'bg-brand-primary dark:bg-[#17b385] text-white shadow-sm'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800'
               }`}
           >
             <Map size={14} />
@@ -108,9 +125,9 @@ export default function Dashboard({ vehicles, locations, locationHistory, isLoad
           </button>
           <button
             onClick={() => setActiveTab('list')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded text-xs font-semibold transition-colors ${activeTab === 'list'
-                ? 'bg-brand-primary text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded text-xs font-semibold transition-colors cursor-pointer ${activeTab === 'list'
+                ? 'bg-brand-primary dark:bg-[#17b385] text-white shadow-sm'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800'
               }`}
           >
             <List size={14} />

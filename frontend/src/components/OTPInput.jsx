@@ -45,24 +45,27 @@ export default function OTPInput({ length = 6, value, onChange }) {
 
   const handlePaste = (e) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData("text").slice(0, length).split("");
-    if (pastedData.some(isNaN)) return;
+    // Strip all non-digit characters so pasting "123 456", "123-456", etc. all work
+    const pastedData = e.clipboardData
+      .getData('text')
+      .replace(/\D/g, '')       // keep only digits
+      .slice(0, length)
+      .split('');
 
-    const newOtp = [...otp];
-    pastedData.forEach((char, index) => {
-      newOtp[index] = char;
-      if (inputRefs.current[index]) {
-        inputRefs.current[index].value = char;
-      }
+    if (pastedData.length === 0) return;
+
+    const newOtp = new Array(length).fill('');
+    pastedData.forEach((char, i) => {
+      newOtp[i] = char;
+      if (inputRefs.current[i]) inputRefs.current[i].value = char;
     });
+
     setOtp(newOtp);
-    onChange(newOtp.join(""));
-    
-    // Focus the last filled input or the next empty one
+    onChange(newOtp.join(''));
+
+    // Focus the last filled box (or last box if fully filled)
     const focusIndex = Math.min(pastedData.length, length - 1);
-    if (inputRefs.current[focusIndex]) {
-        inputRefs.current[focusIndex].focus();
-    }
+    inputRefs.current[focusIndex]?.focus();
   };
 
   return (
@@ -72,12 +75,14 @@ export default function OTPInput({ length = 6, value, onChange }) {
           <input
             key={index}
             type="text"
+            inputMode="numeric"
+            autoComplete={index === 0 ? 'one-time-code' : 'off'}
             maxLength="1"
             ref={(ref) => inputRefs.current[index] = ref}
             value={data}
             onChange={(e) => handleChange(e.target, index)}
             onKeyDown={(e) => handleKeyDown(e, index)}
-            className="w-10 h-12 text-center text-lg font-bold text-slate-900 bg-white border border-slate-300 rounded focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/30 transition-all shadow-sm placeholder-slate-300"
+            className="w-10 h-12 text-center text-lg font-bold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded focus:outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/30 transition-all shadow-sm placeholder-slate-300 dark:placeholder-slate-600"
             placeholder="-"
           />
         );

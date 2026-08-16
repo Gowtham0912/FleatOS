@@ -66,18 +66,22 @@ async def get_vehicle_for_approved_device(
     """
     Return the vehicle linked to this device_id ONLY if the device
     has been approved via the pairing request flow.
-    Falls back to direct vehicle lookup for legacy paired devices.
+
+    Approval is confirmed by either:
+      a) A vehicle row that has a non-NULL user_id (claimed vehicle), OR
+      b) An approved PairingRequest entry whose vehicle_id points to a
+         vehicle — even if that vehicle's user_id is still NULL
+         (covers the edge case where vehicle ownership wasn't backfilled).
     """
-    # First check: does a vehicle with this device_id already exist?
+    # Case (a): vehicle exists and is claimed by a user
     result = await db.execute(
         select(Vehicle).options(joinedload(Vehicle.driver)).where(Vehicle.device_id == device_id)
     )
     vehicle = result.scalar_one_or_none()
     if vehicle and vehicle.user_id is not None:
-        # Vehicle exists and is linked to a user — approved
         return vehicle
 
-    # Check if there's an approved pairing request for this device
+    # Case (b): approved pairing request exists for this device
     result = await db.execute(
         select(PairingRequest).where(
             PairingRequest.device_id == device_id,
@@ -86,11 +90,12 @@ async def get_vehicle_for_approved_device(
     )
     req = result.scalar_one_or_none()
     if req and req.vehicle_id:
-        # Fetch the linked vehicle
         result = await db.execute(
             select(Vehicle).options(joinedload(Vehicle.driver)).where(Vehicle.id == req.vehicle_id)
         )
-        return result.scalar_one_or_none()
+        approved_vehicle = result.scalar_one_or_none()
+        if approved_vehicle:
+            return approved_vehicle
 
     return None
 
@@ -99,15 +104,14 @@ async def record_location(
     db: AsyncSession, payload: LocationCreate
 ) -> tuple[Vehicle, Location]:
     """
-    Record a GPS ping. Only works for approved/linked devices.
+    Record a GPS ping. Only works for devices that have been approved
+    through the pairing request flow.
+
+    The legacy pairing_code shortcut has been removed — all devices must
+    go through the explicit account-code → approval workflow.
     Raises ValueError if the device is not approved.
     """
-    # Try the new approval-based flow first
     vehicle = await get_vehicle_for_approved_device(db, payload.device_id)
-
-    if vehicle is None and payload.pairing_code:
-        # Legacy flow: try pairing_code-based lookup
-        vehicle = await get_or_create_vehicle(db, payload.device_id, payload.pairing_code)
 
     if vehicle is None:
         raise ValueError(

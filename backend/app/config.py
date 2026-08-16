@@ -4,6 +4,7 @@ Application configuration — reads from environment variables with sane default
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import field_validator
+
 class Settings(BaseSettings):
     # ── Database ───────────────────────────────────────────────────────────────
     # asyncpg-based URL for SQLAlchemy async engine
@@ -23,6 +24,17 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8000
     DEBUG: bool = True
+
+    # ── JWT Auth ───────────────────────────────────────────────────────────────
+    JWT_SECRET: str = ""
+
+    @field_validator("JWT_SECRET", mode="before")
+    def require_jwt_secret(cls, v: str) -> str:
+        if not v:
+            raise ValueError(
+                "JWT_SECRET is not set. Add it to your .env file before starting the server."
+            )
+        return v
 
     # ── CORS ───────────────────────────────────────────────────────────────────
     # Add your frontend origin here

@@ -9,7 +9,8 @@ GET  /pairing/check/{device_id}     — GPS sender polls pairing status
 """
 
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Literal
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -81,11 +82,14 @@ async def submit_pairing_request(
     summary="List pairing requests for current user",
 )
 async def get_pairing_requests(
-    status_filter: str | None = None,
+    status_filter: Literal["pending", "approved", "rejected"] | None = Query(
+        default=None,
+        description="Filter pairing requests by status (pending, approved, or rejected).",
+    ),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_current_user),
 ):
-    """Return pairing requests for the logged-in user."""
+    """Return pairing requests for the logged-in user, optionally filtered by status."""
     requests = await list_pairing_requests(db, current_user.id, status_filter)
     return requests
 

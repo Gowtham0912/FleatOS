@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import AnimatedMarker from './AnimatedMarker'
 import { BASE_URL } from '../api/fleetApi'
+import { useTheme } from '../context/ThemeContext'
 
 /**
  * MapFlyTo — imperative component to pan/zoom to a vehicle when selected.
@@ -16,7 +17,7 @@ function MapFlyTo({ vehicleId, position }) {
   useEffect(() => {
     if (vehicleId && vehicleId !== lastVehicleIdRef.current && position) {
       lastVehicleIdRef.current = vehicleId
-      map.flyTo(position, Math.max(map.getZoom(), 15), { duration: 1.2 })
+      map.flyTo(position, 18, { duration: 1.2 })
     } else if (!vehicleId) {
       lastVehicleIdRef.current = null
     }
@@ -26,11 +27,65 @@ function MapFlyTo({ vehicleId, position }) {
 }
 
 /**
+ * ThemeTracker — listens for base layer changes and adds dynamic CSS classes
+ * to the layers control so text color adapts to dark/light backgrounds.
+ */
+function ThemeTracker() {
+  const map = useMap()
+  
+  useEffect(() => {
+    const updateTheme = (e) => {
+      const isDark = e.name === 'Satellite' || e.name === 'Dark Mode'
+      const control = map.getContainer().querySelector('.leaflet-control-layers')
+      if (control) {
+        if (isDark) {
+          control.classList.add('theme-dark-map')
+          control.classList.remove('theme-light-map')
+        } else {
+          control.classList.remove('theme-dark-map')
+          control.classList.add('theme-light-map')
+        }
+      }
+    }
+    map.on('baselayerchange', updateTheme)
+    
+    return () => {
+      map.off('baselayerchange', updateTheme)
+    }
+  }, [map])
+
+  // Programmatically switch baselayers when isDarkMode changes
+  const { isDarkMode } = useTheme()
+  useEffect(() => {
+    const control = map.getContainer().querySelector('.leaflet-control-layers')
+    if (control) {
+      const labels = control.querySelectorAll('label')
+      labels.forEach(label => {
+        const span = label.querySelector('span')
+        if (span) {
+          const text = span.textContent.trim()
+          if (isDarkMode && text === 'Dark Mode') {
+            const input = label.querySelector('input')
+            if (input && !input.checked) input.click()
+          } else if (!isDarkMode && text === 'Satellite') {
+            const input = label.querySelector('input')
+            if (input && !input.checked) input.click()
+          }
+        }
+      })
+    }
+  }, [isDarkMode, map])
+  
+  return null
+}
+
+/**
  * FleetMap — Leaflet map showing all vehicle markers with smooth
  * real-time interpolation between GPS pings and breadcrumb route trails.
  */
 export default function FleetMap({ vehicles, locations, locationHistory, selectedVehicle, lastWsMessage, onInterpolatedPositions, ownerLocation, ownerUser }) {
   const [userCenter, setUserCenter] = useState(null)
+  const { isDarkMode } = useTheme()
 
   // Track interpolated positions so the Dashboard overlay can show live coords
   const interpolatedRef = useRef({})
@@ -96,8 +151,10 @@ export default function FleetMap({ vehicles, locations, locationHistory, selecte
       zoomControl={true}
       attributionControl={false}
     >
+      <ThemeTracker />
+      
       <LayersControl position="topright">
-        <LayersControl.BaseLayer checked name="Satellite">
+        <LayersControl.BaseLayer checked={!isDarkMode} name="Satellite">
           <LayerGroup>
             <TileLayer
               attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
@@ -116,7 +173,7 @@ export default function FleetMap({ vehicles, locations, locationHistory, selecte
           />
         </LayersControl.BaseLayer>
 
-        <LayersControl.BaseLayer name="Dark Mode">
+        <LayersControl.BaseLayer checked={isDarkMode} name="Dark Mode">
           <TileLayer
             attribution='&copy; <a href="https://carto.com/attributions">Carto</a>'
             url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"

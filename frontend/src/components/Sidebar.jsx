@@ -73,17 +73,17 @@ export default function Sidebar({ isConnected, vehicleCount, isOpen, onClose }) 
   ]
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-white border-r border-slate-200 w-56">
+    <div className="flex flex-col h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 w-56 transition-colors">
       {/* ── Logo & Header ────────────────────────────────────────────────── */}
-      <div className="relative flex flex-col items-center justify-center px-5 py-6 border-b border-slate-200">
-        <div className="w-32 h-10 shrink-0 flex items-center justify-center">
+      <div className="relative flex flex-col items-center justify-center px-5 py-6 border-b border-slate-200 dark:border-slate-800">
+        <div className="w-24 h-8 shrink-0 flex items-center justify-center transition-colors">
           <img src="/logo.png" alt="Fleet OS" className="w-full h-full object-contain" />
         </div>
-        <p className="text-xs text-slate-500 mt-2 font-medium">GPS Control Panel</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium">GPS Control Panel</p>
         {/* Mobile close button */}
         <button
           onClick={onClose}
-          className="md:hidden absolute top-4 right-4 p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+          className="md:hidden absolute top-4 right-4 p-1 rounded text-slate-400 dark:text-[#17b385]/70 hover:text-slate-600 dark:hover:text-[#17b385] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           title="Close menu"
         >
           <X size={18} />
@@ -101,8 +101,8 @@ export default function Sidebar({ isConnected, vehicleCount, isOpen, onClose }) 
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded text-sm font-medium transition-colors ${
                 isActive
-                  ? 'bg-brand-primary/10 text-brand-primary font-semibold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  ? 'bg-brand-primary/10 dark:bg-[#17b385]/10 text-brand-primary dark:text-[#17b385] font-semibold'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
               }`
             }
           >
@@ -119,23 +119,23 @@ export default function Sidebar({ isConnected, vehicleCount, isOpen, onClose }) 
       </nav>
 
       {/* ── Status Footer ────────────────────────────────────────────────── */}
-      <div className="p-4 border-t border-slate-200 space-y-3 shrink-0">
+      <div className="p-4 border-t border-slate-200 dark:border-slate-800 space-y-3 shrink-0">
         <div className="flex items-center justify-between px-1 pt-1">
           <div className="flex items-center gap-2">
             {isConnected
-              ? <Wifi size={14} className="text-emerald-600" />
-              : <WifiOff size={14} className="text-rose-500" />
+              ? <Wifi size={14} className="text-emerald-600 dark:text-emerald-500" />
+              : <WifiOff size={14} className="text-rose-500 dark:text-rose-400" />
             }
-            <span className="text-xs font-medium text-slate-600">
+            <span className="text-xs font-medium text-slate-600 dark:text-slate-400">
               {isConnected ? 'Server Online' : 'Connecting…'}
             </span>
           </div>
           <span className={`status-dot ${isConnected ? 'active' : 'inactive'}`} />
         </div>
 
-        <div className="bg-slate-50 border border-slate-200 rounded p-2.5">
-          <p className="text-[11px] text-slate-500 font-medium">Tracked Devices</p>
-          <p className="text-base font-bold text-slate-900 mt-0.5">{vehicleCount}</p>
+        <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded p-2.5 transition-colors">
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Tracked Devices</p>
+          <p className="text-base font-bold text-slate-900 dark:text-white mt-0.5">{vehicleCount}</p>
         </div>
       </div>
     </div>

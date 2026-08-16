@@ -4,11 +4,15 @@ Authentication helper utilities: password hashing and JWT token handling.
 
 import hashlib
 import hmac
-import os
+import logging
 from datetime import datetime, timedelta
 import jwt
 
-SECRET_KEY = os.getenv("JWT_SECRET", "fleet_secret_key_change_in_production_998822")
+from app.config import settings
+
+logger = logging.getLogger(__name__)
+
+SECRET_KEY: str = settings.JWT_SECRET
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_DAYS = 30
 
@@ -45,5 +49,12 @@ def decode_access_token(token: str) -> dict | None:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
-    except Exception:
+    except jwt.ExpiredSignatureError:
+        logger.warning("JWT token has expired.")
+        return None
+    except jwt.InvalidTokenError as exc:
+        logger.warning("JWT token is invalid: %s", exc)
+        return None
+    except Exception as exc:
+        logger.error("Unexpected error decoding JWT: %s", exc)
         return None

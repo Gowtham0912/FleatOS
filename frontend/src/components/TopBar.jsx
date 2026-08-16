@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Activity, Navigation, X, QrCode, Copy, Check, LogOut, User as UserIcon, AlertCircle, Menu, Settings } from 'lucide-react'
+import { Activity, Navigation, X, QrCode, Copy, Check, LogOut, User as UserIcon, AlertCircle, Menu, Settings, Moon, Sun } from 'lucide-react'
 import { format } from 'date-fns'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import SettingsModal from './SettingsModal'
 
 const BASE_URL = (
@@ -26,6 +27,7 @@ export default function TopBar({ title, lastMessage, onToggleMobileMenu }) {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const { user, logout } = useAuth()
+  const { isDarkMode, toggleTheme } = useTheme()
 
   const lastTime = lastMessage?.timestamp
     ? format(new Date(lastMessage.timestamp), 'HH:mm:ss')
@@ -65,13 +67,13 @@ export default function TopBar({ title, lastMessage, onToggleMobileMenu }) {
 
   return (
     <>
-      <header className="flex items-center justify-between px-3.5 py-2.5 md:px-6 md:py-3.5 bg-white border-b border-slate-200 shrink-0">
+      <header className="flex items-center justify-between px-3.5 py-2.5 md:px-6 md:py-3.5 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0 transition-colors">
         <div className="flex items-center gap-3">
           {/* Mobile Menu Button */}
           {onToggleMobileMenu && (
             <button
               onClick={onToggleMobileMenu}
-              className="md:hidden p-1.5 rounded text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+              className="md:hidden p-1.5 rounded text-slate-600 dark:text-[#17b385] hover:text-slate-900 dark:hover:text-[#14a076] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               title="Open Navigation"
             >
               <Menu size={20} />
@@ -79,8 +81,8 @@ export default function TopBar({ title, lastMessage, onToggleMobileMenu }) {
           )}
 
           <div>
-            <h1 className="text-sm md:text-base font-bold text-slate-900 leading-tight">{title}</h1>
-            <p className="text-[11px] md:text-xs text-slate-500 mt-0.5">
+            <h1 className="text-sm md:text-base font-bold text-slate-900 dark:text-white leading-tight">{title}</h1>
+            <p className="text-[11px] md:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               {lastTime
                 ? `Last ping: ${lastTime}`
                 : 'Waiting for GPS data…'}
@@ -97,12 +99,21 @@ export default function TopBar({ title, lastMessage, onToggleMobileMenu }) {
             </div>
           )}
 
+          {/* Theme Toggle Button */}
+          <button
+            onClick={toggleTheme}
+            className="p-1.5 rounded text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer mr-1"
+            title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+
           {/* Connect GPS button */}
           <button
             id="connect-phone-btn"
             onClick={handleConnectClick}
             className="flex items-center gap-1.5 px-2.5 py-1.5 md:px-3 md:py-1.5 rounded text-xs font-semibold
-                       bg-brand-primary text-white hover:bg-brand-primary/90 transition-colors shadow-sm cursor-pointer"
+                       bg-brand-primary dark:bg-[#17b385] text-white hover:bg-brand-primary/90 dark:hover:bg-[#14a076] transition-colors shadow-sm cursor-pointer"
           >
             <Navigation size={13} />
             <span className="hidden sm:inline">Connect GPS</span>
@@ -110,23 +121,19 @@ export default function TopBar({ title, lastMessage, onToggleMobileMenu }) {
           </button>
 
           {/* User Profile / Login (Rightmost Top Bar) */}
-          <div className="pl-2 md:pl-3 border-l border-slate-200 relative">
+          <div className="pl-2 md:pl-3 relative">
             {user ? (
               <>
                 <button
                   onClick={() => setShowProfileMenu(!showProfileMenu)}
-                  className="flex items-center gap-2 p-1 -m-1 rounded hover:bg-slate-50 transition-colors cursor-pointer text-left"
+                  className="flex items-center p-1 -m-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
-                  <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-brand-primary/20 text-brand-primary flex items-center justify-center text-xs font-bold shrink-0 overflow-hidden">
+                  <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-brand-primary/20 dark:bg-[#17b385]/20 text-brand-primary dark:text-[#17b385] flex items-center justify-center text-xs font-bold shrink-0 overflow-hidden ring-2 ring-transparent hover:ring-brand-primary/30 dark:hover:ring-[#17b385]/30 transition-all">
                     {user.avatar_url ? (
                       <img src={`${BASE_URL}${user.avatar_url}`} alt="Avatar" className="w-full h-full object-cover" />
                     ) : (
                       user.full_name ? user.full_name[0].toUpperCase() : 'U'
                     )}
-                  </div>
-                  <div className="hidden md:block">
-                    <p className="text-xs font-bold text-slate-900 leading-none">{user.full_name}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">{user.email}</p>
                   </div>
                 </button>
 
@@ -136,13 +143,17 @@ export default function TopBar({ title, lastMessage, onToggleMobileMenu }) {
                       className="fixed inset-0 z-40" 
                       onClick={() => setShowProfileMenu(false)}
                     />
-                    <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded border border-slate-200 shadow-lg z-50 py-1 animate-fade-in">
+                    <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-xl z-50 py-1 animate-fade-in">
+                      <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 mb-1">
+                        <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{user.full_name}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">{user.email}</p>
+                      </div>
                       <button
                         onClick={() => {
                           setShowProfileMenu(false)
                           setShowSettings(true)
                         }}
-                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left"
+                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left"
                       >
                         <Settings size={15} />
                         <span className="font-medium">Account Settings</span>
@@ -152,7 +163,7 @@ export default function TopBar({ title, lastMessage, onToggleMobileMenu }) {
                           setShowProfileMenu(false)
                           setShowLogoutConfirm(true)
                         }}
-                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-rose-600 hover:bg-slate-50 transition-colors text-left"
+                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-rose-600 dark:text-rose-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left"
                       >
                         <LogOut size={15} />
                         <span className="font-medium">Sign Out</span>
@@ -181,19 +192,19 @@ export default function TopBar({ title, lastMessage, onToggleMobileMenu }) {
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4"
           onClick={(e) => e.target.id === 'login-notice-backdrop' && setShowLoginNotice(false)}
         >
-          <div className="relative bg-white rounded border border-slate-200 p-6 flex flex-col items-center gap-4 text-center shadow-xl max-w-sm w-full animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 flex flex-col items-center gap-4 text-center shadow-xl rounded-xl max-w-xs w-full animate-fade-in transition-colors relative">
             <button
               onClick={() => setShowLoginNotice(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+              className="absolute top-4 right-4 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors cursor-pointer"
             >
               <X size={18} />
             </button>
-            <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-500 flex items-center justify-center">
               <AlertCircle size={24} />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900">Sign In Required</h3>
-              <p className="text-xs text-slate-500 mt-1">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Sign In Required</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 Please log in to your account first to generate your pairing code and connect GPS devices.
               </p>
             </div>
@@ -216,45 +227,45 @@ export default function TopBar({ title, lastMessage, onToggleMobileMenu }) {
           onClick={(e) => e.target.id === 'qr-modal-backdrop' && setShowQr(false)}
         >
           <div
-            className="relative bg-white rounded border border-slate-200 p-6 flex flex-col items-center gap-4 shadow-xl max-w-sm w-full animate-fade-in"
+            className="relative bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-800 p-6 flex flex-col items-center gap-4 shadow-xl max-w-sm w-full animate-fade-in transition-colors"
           >
             {/* Close button */}
             <button
               id="qr-close-btn"
               onClick={() => setShowQr(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+              className="absolute top-4 right-4 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors cursor-pointer"
             >
               <X size={18} />
             </button>
 
             {/* Header */}
-            <div className="flex items-center gap-2 text-slate-900">
-              <QrCode size={20} className="text-brand-primary" />
+            <div className="flex items-center gap-2 text-slate-900 dark:text-white">
+              <QrCode size={20} className="text-brand-primary dark:text-[#17b385]" />
               <span className="text-sm font-bold tracking-tight">Connect GPS Tracker</span>
             </div>
 
             {/* Account Code — prominent display */}
             {accountCode && (
-              <div className="w-full bg-brand-primary/10 border border-brand-primary/30 rounded p-4 text-center">
-                <p className="text-[10px] text-brand-primary/80 font-bold uppercase tracking-wider mb-1">Your Account Code</p>
+              <div className="w-full bg-brand-primary/10 dark:bg-[#17b385]/10 border border-brand-primary/30 dark:border-[#17b385]/30 rounded p-4 text-center transition-colors">
+                <p className="text-[10px] text-brand-primary/80 dark:text-[#17b385]/80 font-bold uppercase tracking-wider mb-1">Your Account Code</p>
                 <div className="flex items-center justify-center gap-2">
-                  <p className="text-2xl font-bold font-mono text-brand-primary tracking-widest">{accountCode}</p>
+                  <p className="text-2xl font-bold font-mono text-brand-primary dark:text-[#17b385] tracking-widest">{accountCode}</p>
                   <button
                     onClick={copyCode}
-                    className="p-1.5 rounded bg-white border border-brand-primary/30 text-brand-primary hover:bg-brand-primary/20
+                    className="p-1.5 rounded bg-white dark:bg-slate-800 border border-brand-primary/30 dark:border-[#17b385]/30 text-brand-primary dark:text-[#17b385] hover:bg-brand-primary/20 dark:hover:bg-[#17b385]/20
                                transition-colors cursor-pointer"
                     title="Copy code"
                   >
                     {copiedCode ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
                   </button>
                 </div>
-                <p className="text-[10px] text-brand-primary/60 mt-1.5">Share this code or scan QR below</p>
+                <p className="text-[10px] text-brand-primary/60 dark:text-[#17b385]/60 mt-1.5">Share this code or scan QR below</p>
               </div>
             )}
 
             {/* QR Code */}
             <div
-              className="rounded overflow-hidden border border-slate-200 bg-white p-2 shadow-inner"
+              className="rounded overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2 shadow-inner transition-colors"
             >
               <img
                 src={qrSrc}
@@ -273,27 +284,27 @@ export default function TopBar({ title, lastMessage, onToggleMobileMenu }) {
 
             {/* URL with Copy Button */}
             <div className="text-center w-full">
-              <p className="text-xs text-slate-500 mb-1.5">Or open this link on your phone:</p>
-              <div className="flex items-center gap-1.5 bg-white p-1.5 rounded border border-slate-200">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1.5">Or open this link on your phone:</p>
+              <div className="flex items-center gap-1.5 bg-white dark:bg-slate-950 p-1.5 rounded border border-slate-200 dark:border-slate-800 transition-colors">
                 <a
                   href={GPS_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs font-mono text-brand-primary hover:underline truncate flex-1 text-left px-1"
+                  className="text-xs font-mono text-brand-primary dark:text-[#17b385] hover:underline truncate flex-1 text-left px-1"
                   title={GPS_URL}
                 >
                   {GPS_URL}
                 </a>
                 <button
                   onClick={copyUrl}
-                  className="flex items-center gap-1 px-2 py-1 rounded bg-white border border-slate-200 text-slate-700
-                             hover:bg-slate-100 text-[11px] font-medium transition-colors cursor-pointer shrink-0"
+                  className="flex items-center gap-1 px-2 py-1 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300
+                             hover:bg-slate-100 dark:hover:bg-slate-700 text-[11px] font-medium transition-colors cursor-pointer shrink-0"
                   title="Copy link"
                 >
                   {copiedUrl ? (
                     <>
-                      <Check size={12} className="text-emerald-600" />
-                      <span className="text-emerald-600 font-semibold">Copied</span>
+                      <Check size={12} className="text-emerald-600 dark:text-emerald-400" />
+                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Copied</span>
                     </>
                   ) : (
                     <>
@@ -315,18 +326,18 @@ export default function TopBar({ title, lastMessage, onToggleMobileMenu }) {
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/50 p-4 animate-fade-in"
           onClick={(e) => e.target.id === 'logout-confirm-backdrop' && setShowLogoutConfirm(false)}
         >
-          <div className="bg-white border border-slate-200 p-6 flex flex-col items-center gap-4 text-center shadow-xl rounded-xl max-w-xs w-full animate-slide-in">
-            <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 flex flex-col items-center gap-4 text-center shadow-xl rounded-xl max-w-xs w-full animate-fade-in transition-colors">
+            <div className="w-12 h-12 rounded-full bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-500 flex items-center justify-center">
               <LogOut size={24} />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900">Sign Out</h3>
-              <p className="text-xs text-slate-500 mt-1">Are you sure you want to sign out of your account?</p>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">Sign Out</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Are you sure you want to sign out of your account?</p>
             </div>
             <div className="flex w-full gap-3 mt-2">
               <button
                 onClick={() => setShowLogoutConfirm(false)}
-                className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded transition-colors cursor-pointer"
+                className="flex-1 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs rounded transition-colors cursor-pointer"
               >
                 Cancel
               </button>

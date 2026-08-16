@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Lock, Mail, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { requestOtpLogin, verifyOtpLogin } from '../api/fleetApi'
@@ -19,6 +19,8 @@ export default function Login() {
   
   const { login } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const returnTo = searchParams.get('returnTo') || '/'
 
   const handlePasswordLogin = async (e) => {
     e.preventDefault()
@@ -26,7 +28,7 @@ export default function Login() {
     setIsSubmitting(true)
     try {
       await login(email, password)
-      navigate('/')
+      navigate(returnTo)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -57,7 +59,7 @@ export default function Login() {
     try {
       const data = await verifyOtpLogin(email, code)
       localStorage.setItem('fleet_token', data.access_token)
-      window.location.href = '/'
+      window.location.href = returnTo
     } catch (err) {
       setError(err.message || 'Invalid OTP')
     } finally {
@@ -75,20 +77,20 @@ export default function Login() {
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 10 }} 
-      animate={{ opacity: 1, y: 0 }} 
-      exit={{ opacity: 0, y: -10 }}
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
-      className="min-h-screen w-screen bg-white flex items-center justify-center p-4"
+      className="min-h-screen w-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 transition-colors"
     >
-      <div className="bg-white border border-slate-200 rounded shadow-sm max-w-md w-full p-8">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded shadow-sm max-w-md w-full p-8 transition-colors">
         {/* Header */}
         <div className="flex flex-col items-center text-center mb-6">
-          <div className="w-16 h-16 mb-2">
+          <div className="w-24 h-24 mb-3 transition-colors">
             <img src="/logo.png" alt="Fleet OS" className="w-full h-full object-contain" />
           </div>
-          <h1 className="text-xl font-bold text-slate-900">Sign in to Fleet Tracker</h1>
-          <p className="text-xs text-slate-500 mt-1">Manage your private vehicles and live GPS tracking</p>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white">Sign in to Fleet Tracker</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Manage your private vehicles and live GPS tracking</p>
         </div>
 
         {error && (
@@ -109,7 +111,7 @@ export default function Login() {
         {mode === 'password' && (
           <form onSubmit={handlePasswordLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Email address</label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Email address</label>
               <div className="relative">
                 <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
@@ -118,25 +120,26 @@ export default function Login() {
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brand-primary transition-colors"
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-brand-primary transition-colors [&:-webkit-autofill]:!shadow-[inset_0_0_0px_1000px_#fff] [&:-webkit-autofill]:![-webkit-text-fill-color:#0F172A] dark:[&:-webkit-autofill]:!shadow-[inset_0_0_0px_1000px_#020617] dark:[&:-webkit-autofill]:![-webkit-text-fill-color:#F1F5F9]"
                 />
               </div>
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs font-semibold text-slate-700">Password</label>
-                <Link to="/forgot-password" className="text-[10px] text-brand-primary hover:underline">Forgot password?</Link>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">Password</label>
+                <Link to="/forgot-password" className="text-[10px] text-brand-primary dark:text-[#17b385] hover:underline">Forgot password?</Link>
               </div>
               <div className="relative">
                 <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type={showPassword ? "text" : "password"}
                   required
+                  autoComplete="current-password"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded pl-9 pr-10 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brand-primary transition-colors"
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded pl-9 pr-10 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-brand-primary transition-colors [&:-webkit-autofill]:!shadow-[inset_0_0_0px_1000px_#fff] [&:-webkit-autofill]:![-webkit-text-fill-color:#0F172A] dark:[&:-webkit-autofill]:!shadow-[inset_0_0_0px_1000px_#020617] dark:[&:-webkit-autofill]:![-webkit-text-fill-color:#F1F5F9]"
                 />
                 <button
                   type="button"
@@ -151,7 +154,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-2.5 bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold text-xs rounded shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+              className="w-full py-2.5 bg-brand-primary dark:bg-[#17b385] hover:bg-brand-primary/90 dark:hover:bg-[#17b385]/90 text-white font-semibold text-xs rounded shadow-sm transition-colors cursor-pointer disabled:opacity-50"
             >
               {isSubmitting ? 'Signing in…' : 'Sign In'}
             </button>
@@ -162,7 +165,7 @@ export default function Login() {
         {mode === 'otp' && otpStep === 1 && (
           <form onSubmit={handleRequestOtp} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Email address</label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Email address</label>
               <div className="relative">
                 <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
@@ -171,7 +174,7 @@ export default function Login() {
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brand-primary transition-colors"
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-brand-primary transition-colors"
                 />
               </div>
             </div>
@@ -179,7 +182,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={isSubmitting || !email}
-              className="w-full py-2.5 bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold text-xs rounded shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+              className="w-full py-2.5 bg-brand-primary dark:bg-[#17b385] hover:bg-brand-primary/90 dark:hover:bg-[#17b385]/90 text-white font-semibold text-xs rounded shadow-sm transition-colors cursor-pointer disabled:opacity-50"
             >
               {isSubmitting ? 'Sending Code…' : 'Send Login Code'}
             </button>
@@ -188,8 +191,9 @@ export default function Login() {
 
         {mode === 'otp' && otpStep === 2 && (
           <form onSubmit={handleVerifyOtp} className="space-y-4">
-            <div className="text-center text-sm font-medium text-slate-700 mb-4">
-              Enter the 6-digit code sent to<br/> <span className="font-bold text-slate-900">{email}</span>
+            <div className="text-center text-sm font-medium text-slate-700 dark:text-slate-300 mb-4">
+              Enter the 6-digit code sent to<br/> <span className="font-bold text-slate-900 dark:text-white">{email}</span>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 font-normal">If code is not received, please check your spam folder.</p>
             </div>
             
             <OTPInput value={code} onChange={setCode} />
@@ -197,7 +201,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={isSubmitting || code.length !== 6}
-              className="w-full py-2.5 bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold text-xs rounded shadow-sm transition-colors cursor-pointer disabled:opacity-50 mt-4"
+              className="w-full py-2.5 bg-brand-primary dark:bg-[#17b385] hover:bg-brand-primary/90 dark:hover:bg-[#17b385]/90 text-white font-semibold text-xs rounded shadow-sm transition-colors cursor-pointer disabled:opacity-50 mt-4"
             >
               {isSubmitting ? 'Verifying…' : 'Verify & Sign In'}
             </button>
@@ -205,19 +209,19 @@ export default function Login() {
         )}
 
         {/* Toggle Mode */}
-        <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col gap-2 items-center text-xs">
+        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2 items-center text-xs">
           <button
             type="button"
             onClick={toggleMode}
-            className="text-slate-600 font-medium hover:text-slate-900 transition-colors"
+            className="text-slate-600 dark:text-slate-400 font-medium hover:text-slate-900 dark:hover:text-white transition-colors"
           >
             {mode === 'password' ? 'Sign in with a one-time code instead' : 'Sign in with a password instead'}
           </button>
         </div>
 
-        <div className="mt-2 text-center text-xs text-slate-500">
+        <div className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400">
           Don't have an account?{' '}
-          <Link to="/register" className="text-brand-primary font-semibold hover:underline">
+          <Link to="/register" className="text-brand-primary dark:text-[#17b385] font-semibold hover:underline">
             Create Account
           </Link>
         </div>

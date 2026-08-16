@@ -60,7 +60,7 @@ export default function App() {
       <Route
         path="/*"
         element={
-          <div className="flex fixed inset-0 overflow-hidden bg-white text-slate-800">
+          <div className="flex fixed inset-0 overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 transition-colors">
             <Sidebar
               isConnected={isConnected}
               vehicleCount={vehicles.length}

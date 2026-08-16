@@ -158,7 +158,10 @@ async def generate_and_send_otp(email: str, purpose: str, db: AsyncSession, chec
     user = res.scalar_one_or_none()
     
     if check_user_exists and not user:
-        # Don't reveal user existence for login/reset, just return success
+        # Intentional anti-enumeration: we return a generic success message even
+        # when the email is not in our system. This prevents an attacker from
+        # discovering which emails are registered by probing this endpoint.
+        # No OTP is generated or sent in this case.
         return {"message": "If that email is in our system, an OTP was sent."}
     
     if not check_user_exists and user:

@@ -18,9 +18,48 @@ html, body, #root {
 
 body {
   font-family: 'Poppins', system-ui, -apple-system, sans-serif;
-  background-color: #FFFFFF;
-  color: #0F172A;
+  @apply bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-200;
   -webkit-font-smoothing: antialiased;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+/* ── Autofill overrides ─────────────────────────────────────────────────── */
+/* Prevent Chrome from forcing white backgrounds on autofilled inputs */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px white inset !important;
+  -webkit-text-fill-color: #0F172A !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+input:autofill,
+input:autofill:hover,
+input:autofill:focus,
+input:autofill:active {
+  box-shadow: 0 0 0 1000px white inset !important;
+  color: #0F172A !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover, 
+.dark input:-webkit-autofill:focus, 
+.dark input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #020617 inset !important; /* slate-950 */
+  -webkit-text-fill-color: #F1F5F9 !important; /* slate-100 */
+}
+
+.dark input:autofill,
+.dark input:autofill:hover,
+.dark input:autofill:focus,
+.dark input:autofill:active {
+  box-shadow: 0 0 0 1000px #020617 inset !important;
+  color: #F1F5F9 !important;
 }
 
 /* ── Leaflet map standard clean theme ───────────────────────────────────── */
@@ -101,3 +140,47 @@ body {
   background: #94A3B8;
 }
 
+/* ── Leaflet Layers Control Glass Effect ───────────────────────────── */
+.leaflet-control-layers {
+  background: rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
+  transition: color 0.3s ease;
+}
+
+.leaflet-control-layers-expanded {
+  background: rgba(255, 255, 255, 0.15) !important;
+  padding: 10px 12px !important;
+}
+
+.leaflet-control-layers.theme-dark-map {
+  color: #FFFFFF !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8) !important;
+}
+
+.leaflet-control-layers.theme-light-map {
+  color: #0F172A !important;
+  text-shadow: none !important;
+}
+
+/* ── Leaflet Zoom Control Spacing ────────────────────────────── */
+.leaflet-control-zoom-in {
+  margin-bottom: 6px !important;
+  border-bottom: 1px solid rgba(0,0,0,0.1) !important;
+  border-radius: 4px !important;
+}
+.leaflet-control-zoom-out {
+  border-top: 1px solid rgba(0,0,0,0.1) !important;
+  border-radius: 4px !important;
+}
+.leaflet-control-zoom.leaflet-bar {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+.leaflet-control-zoom.leaflet-bar a {
+  box-shadow: 0 1px 5px rgba(0,0,0,0.2) !important;
+}

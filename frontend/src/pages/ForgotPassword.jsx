@@ -73,19 +73,19 @@ export default function ForgotPassword() {
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 10 }} 
-      animate={{ opacity: 1, y: 0 }} 
-      exit={{ opacity: 0, y: -10 }}
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
-      className="min-h-screen w-screen bg-white flex items-center justify-center p-4"
+      className="min-h-screen w-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 transition-colors"
     >
-      <div className="bg-white border border-slate-200 rounded shadow-sm max-w-md w-full p-8">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded shadow-sm max-w-md w-full p-8 transition-colors">
         <div className="flex flex-col items-center text-center mb-6">
           <div className="w-16 h-16 mb-2">
             <img src="/logo.png" alt="Fleet OS" className="w-full h-full object-contain" />
           </div>
-          <h1 className="text-xl font-bold text-slate-900">Reset Password</h1>
-          <p className="text-xs text-slate-500 mt-1">
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white">Reset Password</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             {step === 1 && 'Enter your email to receive a reset code'}
             {step === 2 && 'Enter the 6-digit code sent to your email'}
             {step === 3 && 'Create a new secure password'}
@@ -109,7 +109,7 @@ export default function ForgotPassword() {
         {step === 1 && (
           <form onSubmit={handleRequestOtp} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Email address</label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Email address</label>
               <div className="relative">
                 <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
@@ -118,7 +118,7 @@ export default function ForgotPassword() {
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded pl-9 pr-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brand-primary transition-colors"
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded pl-9 pr-3 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-brand-primary transition-colors"
                 />
               </div>
             </div>
@@ -126,7 +126,7 @@ export default function ForgotPassword() {
             <button
               type="submit"
               disabled={isSubmitting || !email}
-              className="w-full py-2.5 bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold text-xs rounded shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+              className="w-full py-2.5 bg-brand-primary dark:bg-[#17b385] hover:bg-brand-primary/90 dark:hover:bg-[#17b385]/90 text-white font-semibold text-xs rounded shadow-sm transition-colors cursor-pointer disabled:opacity-50"
             >
               {isSubmitting ? 'Sending…' : 'Send Reset Code'}
             </button>
@@ -135,8 +135,8 @@ export default function ForgotPassword() {
 
         {step === 2 && (
           <form onSubmit={handleOtpNext} className="space-y-4">
-            <div className="text-center text-sm font-medium text-slate-700 mb-4">
-              Sent to: <span className="font-bold text-slate-900">{email}</span>
+            <div className="text-center text-sm font-medium text-slate-700 dark:text-slate-300 mb-4">
+              Sent to: <span className="font-bold text-slate-900 dark:text-white">{email}</span>
             </div>
             
             <OTPInput value={code} onChange={setCode} />
@@ -144,7 +144,7 @@ export default function ForgotPassword() {
             <button
               type="submit"
               disabled={code.length !== 6}
-              className="w-full py-2.5 bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold text-xs rounded shadow-sm transition-colors cursor-pointer disabled:opacity-50 mt-4"
+              className="w-full py-2.5 bg-brand-primary dark:bg-[#17b385] hover:bg-brand-primary/90 dark:hover:bg-[#17b385]/90 text-white font-semibold text-xs rounded shadow-sm transition-colors cursor-pointer disabled:opacity-50 mt-4"
             >
               Next
             </button>
@@ -162,7 +162,7 @@ export default function ForgotPassword() {
         {step === 3 && (
           <form onSubmit={handleResetPassword} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">New Password</label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">New Password</label>
               <div className="relative">
                 <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
@@ -172,7 +172,7 @@ export default function ForgotPassword() {
                   placeholder="Minimum 6 characters"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded pl-9 pr-10 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brand-primary transition-colors"
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded pl-9 pr-10 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-brand-primary transition-colors"
                 />
                 <button
                   type="button"
@@ -185,7 +185,7 @@ export default function ForgotPassword() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Re-enter Password</label>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Re-enter Password</label>
               <div className="relative">
                 <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
@@ -195,7 +195,7 @@ export default function ForgotPassword() {
                   placeholder="Minimum 6 characters"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded pl-9 pr-10 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brand-primary transition-colors"
+                  className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded pl-9 pr-10 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-brand-primary transition-colors"
                 />
                 <button
                   type="button"
@@ -210,7 +210,7 @@ export default function ForgotPassword() {
             <button
               type="submit"
               disabled={isSubmitting || newPassword.length < 6}
-              className="w-full py-2.5 bg-brand-primary hover:bg-brand-primary/90 text-white font-semibold text-xs rounded shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+              className="w-full py-2.5 bg-brand-primary dark:bg-[#17b385] hover:bg-brand-primary/90 dark:hover:bg-[#17b385]/90 text-white font-semibold text-xs rounded shadow-sm transition-colors cursor-pointer disabled:opacity-50"
             >
               {isSubmitting ? 'Resetting…' : 'Reset Password'}
             </button>
@@ -225,9 +225,9 @@ export default function ForgotPassword() {
           </form>
         )}
 
-        <div className="mt-6 pt-4 border-t border-slate-100 text-center text-xs text-slate-500">
+        <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 text-center text-xs text-slate-500 dark:text-slate-400">
           Remembered your password?{' '}
-          <Link to="/login" className="text-brand-primary font-semibold hover:underline">
+          <Link to="/login" className="text-brand-primary dark:text-[#17b385] font-semibold hover:underline">
             Sign In
           </Link>
         </div>

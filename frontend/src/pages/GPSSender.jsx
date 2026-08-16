@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, Navigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Navigation, Loader2, XCircle, Play, Square, AlertCircle, Smartphone } from 'lucide-react'
 import { sendPairingRequest, checkPairingStatus, sendLocation } from '../api/fleetApi'
@@ -11,6 +11,7 @@ const POLL_MS = 3000
 export default function GPSSender() {
   const { user } = useAuth()
   const [searchParams] = useSearchParams()
+  const routerLocation = useLocation()
   const [code, setCode] = useState(searchParams.get('code') || '')
   const [deviceId, setDeviceId] = useState('')
   const [status, setStatus] = useState('enter_code') // enter_code, pending, rejected, tracking
@@ -29,16 +30,17 @@ export default function GPSSender() {
   const lastPostTimeRef = useRef(0)
   const wakeLockRef = useRef(null)
 
-  // Initialize device ID
+  // Derive a stable device ID from the logged-in user's account.
+  // This means the same user always appears as the same "device" regardless
+  // of which browser or phone they use the GPS sender on.
   useEffect(() => {
-    let id = localStorage.getItem('fleet_device_id')
-    if (!id) {
-      id = Array.from(crypto.getRandomValues(new Uint8Array(8)))
-        .map(b => b.toString(16).padStart(2, '0')).join('')
-      localStorage.setItem('fleet_device_id', id)
+    if (user) {
+      const id = `user-${user.id}`
+      // Clean up any old random device ID from localStorage
+      localStorage.removeItem('fleet_device_id')
+      setDeviceId(id)
     }
-    setDeviceId(id)
-  }, [])
+  }, [user])
 
   const addLog = (type, msg) => {
     const time = new Date().toLocaleTimeString()
@@ -284,24 +286,29 @@ export default function GPSSender() {
     }
   }
 
+  if (!user) {
+    const returnTo = encodeURIComponent(routerLocation.pathname + routerLocation.search)
+    return <Navigate to={`/login?returnTo=${returnTo}`} replace />
+  }
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="flex-1 overflow-y-auto bg-slate-50 p-4 md:p-6"
+      className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950 p-4 md:p-6 transition-colors"
     >
       <div className="max-w-md mx-auto w-full space-y-4">
 
         {status === 'enter_code' && (
-          <div className="bg-white rounded border border-slate-200 p-6 shadow-sm">
+          <div className="bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-800 p-6 shadow-sm transition-colors">
             <div className="text-center mb-6">
-              <div className="w-12 h-12 bg-brand-primary/10 text-brand-primary rounded flex items-center justify-center mx-auto mb-3">
+              <div className="w-12 h-12 bg-brand-primary/10 text-brand-primary dark:text-[#17b385] rounded flex items-center justify-center mx-auto mb-3">
                 <Navigation size={24} />
               </div>
-              <h2 className="text-base font-bold text-slate-900">Connect Device</h2>
-              <p className="text-xs text-slate-500 mt-1">Enter the 6-digit code from your dashboard.</p>
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">Connect Device</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Enter the 6-digit code from your dashboard.</p>
             </div>
 
             <form onSubmit={handleManualSubmit}>
@@ -311,7 +318,7 @@ export default function GPSSender() {
                 placeholder="FLT-XXXXXX"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                className="w-full text-center text-lg font-mono font-bold tracking-widest uppercase bg-slate-50 border border-slate-200 rounded px-4 py-3 mb-4 focus:outline-none focus:border-brand-primary"
+                className="w-full text-center text-lg font-mono font-bold tracking-widest uppercase bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded px-4 py-3 mb-4 focus:outline-none focus:border-brand-primary text-slate-900 dark:text-white transition-colors"
               />
               {error && (
                 <div className="mb-4 text-xs text-rose-600 text-center bg-rose-50 border border-rose-200 p-2 rounded">
@@ -320,7 +327,7 @@ export default function GPSSender() {
               )}
               <button
                 type="submit"
-                className="w-full bg-brand-primary text-white font-bold text-sm py-3 rounded hover:bg-brand-primary/90 transition-colors shadow-sm cursor-pointer"
+                className="w-full bg-brand-primary dark:bg-[#17b385] hover:bg-brand-primary/90 dark:hover:bg-[#17b385]/90 text-white font-bold text-sm py-3 rounded transition-colors shadow-sm cursor-pointer"
               >
                 Pair Device
               </button>
@@ -403,7 +410,7 @@ export default function GPSSender() {
 
             <button
               onClick={toggleTracking}
-              className={`w-full flex items-center justify-center gap-2 font-bold text-sm py-3 rounded transition-colors shadow-sm text-white cursor-pointer ${isTracking ? 'bg-rose-600 hover:bg-rose-700' : 'bg-brand-primary hover:bg-brand-primary/90'}`}
+              className={`w-full flex items-center justify-center gap-2 font-bold text-sm py-3 rounded transition-colors shadow-sm text-white cursor-pointer ${isTracking ? 'bg-rose-600 hover:bg-rose-700' : 'bg-brand-primary dark:bg-[#17b385] hover:bg-brand-primary/90 dark:hover:bg-[#17b385]/90'}`}
             >
               {isTracking ? <Square size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" />}
               {isTracking ? 'Stop Sharing' : 'Start Sharing Location'}

@@ -27,9 +27,7 @@ def _get_gmail_access_token() -> str | None:
 
 def send_otp_email(to_email: str, otp: str, purpose: str) -> bool:
     """Send an OTP code to the provided email via Gmail REST API."""
-    logger.info(f"========== OTP GENERATED ==========")
-    logger.info(f"OTP for {to_email}: {otp}")
-    logger.info(f"===================================")
+    logger.info("OTP generated for %s (purpose=%s)", to_email, purpose)
     
     if not (settings.GMAIL_CLIENT_ID and settings.GMAIL_CLIENT_SECRET and settings.GMAIL_REFRESH_TOKEN):
         logger.warning("Gmail OAuth credentials are not set. Cannot send email.")

@@ -1,5 +1,6 @@
 import { Truck, MapPin, Clock, Smartphone } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
+import { useNavigate } from 'react-router-dom'
 
 import { motion } from 'framer-motion'
 
@@ -7,13 +8,15 @@ import { motion } from 'framer-motion'
  * Vehicles page — simple clean table view of all tracked devices.
  */
 export default function Vehicles({ vehicles, locations, isLoading, isConnected, lastMessage, onToggleMobileMenu }) {
+  const navigate = useNavigate()
+
   return (
     <motion.div 
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="flex flex-col flex-1 min-h-0 bg-white"
+      className="flex flex-col flex-1 min-h-0 bg-slate-50 dark:bg-slate-950 transition-colors"
     >
 
 
@@ -24,10 +27,10 @@ export default function Vehicles({ vehicles, locations, isLoading, isConnected, 
             <p className="text-sm">Loading vehicles list…</p>
           </div>
         ) : vehicles.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 text-slate-400 text-center bg-white border border-slate-200 rounded p-8 shadow-sm">
-            <Truck size={36} className="mb-2 text-slate-300" />
-            <p className="text-sm font-semibold text-slate-700">No vehicles registered</p>
-            <p className="text-xs text-slate-400 mt-1">Connect your mobile phone using the QR code to start tracking.</p>
+          <div className="flex flex-col items-center justify-center h-48 text-slate-400 dark:text-slate-500 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded p-8 shadow-sm transition-colors">
+            <Truck size={36} className="mb-2 text-slate-300 dark:text-slate-600" />
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">No vehicles registered</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Connect your mobile phone using the QR code to start tracking.</p>
           </div>
         ) : (
           <>
@@ -40,64 +43,68 @@ export default function Vehicles({ vehicles, locations, isLoading, isConnected, 
                     Date.now() - new Date(l.timestamp).getTime() < 5 * 60 * 1000
                   ).length, icon: Clock },
               ].map(({ label, value, icon: Icon }) => (
-                <div key={label} className="bg-white border border-slate-200 rounded p-4 shadow-sm hover:border-brand-primary transition-colors">
+                <div key={label} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded p-4 shadow-sm hover:border-brand-primary dark:hover:border-[#17b385] transition-colors">
                   <div className="flex items-center gap-2 mb-1.5">
-                    <Icon size={14} className="text-brand-primary" />
-                    <p className="text-xs font-medium text-slate-500">{label}</p>
+                    <Icon size={14} className="text-brand-primary dark:text-[#17b385]" />
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</p>
                   </div>
-                  <p className="text-xl md:text-2xl font-bold text-slate-900">{value}</p>
+                  <p className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white">{value}</p>
                 </div>
               ))}
             </div>
 
             {/* ── Table ──────────────────────────────────────────────── */}
-            <div className="bg-white border border-slate-200 rounded shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded shadow-sm overflow-hidden transition-colors">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left min-w-[600px]">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200">
+                    <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 transition-colors">
                       {['#', 'Name', 'Device ID', 'Coordinates', 'Last Seen', 'Status'].map((h) => (
-                        <th key={h} className="px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                        <th key={h} className="px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">
                           {h}
                         </th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                     {vehicles.map((v) => {
                       const loc = locations[v.id]
                       const isActive = loc && Date.now() - new Date(loc.timestamp).getTime() < 5 * 60 * 1000
 
                       return (
-                        <tr key={v.id} className="hover:bg-slate-50/80 transition-colors">
+                        <tr 
+                          key={v.id} 
+                          onClick={() => navigate('/', { state: { selectedVehicleId: v.id } })}
+                          className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
+                        >
                           {/* ID */}
-                          <td className="px-4 py-3 text-slate-400 font-mono text-xs">{v.id}</td>
+                          <td className="px-4 py-3 text-slate-400 dark:text-slate-500 font-mono text-xs">{v.id}</td>
 
                           {/* Name */}
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
-                              <Truck size={14} className="text-brand-primary shrink-0" />
-                              <span className="font-semibold text-slate-900">{v.name}</span>
+                              <Truck size={14} className="text-brand-primary dark:text-[#17b385] shrink-0" />
+                              <span className="font-semibold text-slate-900 dark:text-white">{v.name}</span>
                             </div>
                           </td>
 
                           {/* Device ID */}
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-1.5">
-                              <Smartphone size={12} className="text-slate-400 shrink-0" />
-                              <span className="font-mono text-xs text-slate-600">{v.device_id}</span>
+                              <Smartphone size={12} className="text-slate-400 dark:text-slate-500 shrink-0" />
+                              <span className="font-mono text-xs text-slate-600 dark:text-slate-400">{v.device_id}</span>
                             </div>
                           </td>
 
                           {/* Coordinates */}
-                          <td className="px-4 py-3 font-mono text-xs text-slate-700 whitespace-nowrap">
+                          <td className="px-4 py-3 font-mono text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap">
                             {loc
                               ? `${loc.latitude.toFixed(5)}, ${loc.longitude.toFixed(5)}`
-                              : <span className="text-slate-400 italic">No data</span>}
+                              : <span className="text-slate-400 dark:text-slate-500 italic">No data</span>}
                           </td>
 
                           {/* Last Seen */}
-                          <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">
+                          <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
                             {loc
                               ? formatDistanceToNow(new Date(loc.timestamp), { addSuffix: true })
                               : '—'}
