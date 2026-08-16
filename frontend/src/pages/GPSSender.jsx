@@ -139,15 +139,10 @@ export default function GPSSender() {
 
   const submitCode = async (c) => {
     if (!c.trim()) {
-      setError('Please enter an account code.')
+      setError('Please enter a code.')
       return
     }
     const upperCode = c.trim().toUpperCase()
-    
-    if (user && upperCode === user.account_code) {
-      setError("This is your own code! You are tracked by default on your dashboard.")
-      return
-    }
 
     setError(null)
     setCode(upperCode)

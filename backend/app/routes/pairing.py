@@ -48,15 +48,43 @@ async def submit_pairing_request(
     current_user: User | None = Depends(get_current_user),
 ):
     """
-    Called by the GPS sender page when a user enters an account code.
-    Finds the account owner and creates a pending pairing request.
-    If the requester is already logged in as the account owner, it auto-approves.
+    Called by the GPS sender page when a user enters an account code or vehicle pairing code.
+    If it's a vehicle pairing code, it binds the device to that vehicle directly.
+    If it's an account code, it creates a pending pairing request (or auto-approves if owner).
     """
+    from sqlalchemy import select
+    from app.models import Vehicle
+    from datetime import datetime, timezone
+
+    # 1. Check if the provided code is actually a specific vehicle's pairing code
+    v_res = await db.execute(select(Vehicle).where(Vehicle.pairing_code == payload.account_code))
+    vehicle = v_res.scalar_one_or_none()
+    
+    if vehicle:
+        # Bind this device to the existing vehicle
+        vehicle.device_id = payload.device_id
+        if current_user:
+            vehicle.driver_id = current_user.id
+        await db.commit()
+        await db.refresh(vehicle)
+        
+        logger.info("Bound device %s to vehicle %s via pairing code", payload.device_id, vehicle.id)
+        
+        return PairingRequestResponse(
+            id=0,
+            user_id=vehicle.user_id or 0,
+            device_id=payload.device_id,
+            status="approved",
+            created_at=datetime.now(timezone.utc),
+            vehicle_name=vehicle.name
+        )
+
+    # 2. Otherwise, treat it as an account code
     user = await find_user_by_account_code(db, payload.account_code)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Invalid account code. Please check and try again.",
+            detail="Invalid code. Please check and try again.",
         )
 
     sender_id = current_user.id if current_user else None
