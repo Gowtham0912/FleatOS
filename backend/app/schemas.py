@@ -164,6 +164,9 @@ class PairingRequestResponse(BaseModel):
     device_id: str
     status: str
     vehicle_id: int | None = None
+    vehicle_name: str | None = None
+    owner_name: str | None = None
+    owner_avatar_url: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -183,6 +186,8 @@ class PairingCheckResponse(BaseModel):
     """Response for GPS sender polling to check pairing status."""
     status: str  # pending / approved / rejected
     vehicle_name: str | None = None
+    owner_name: str | None = None
+    owner_avatar_url: str | None = None
     message: str
 
 

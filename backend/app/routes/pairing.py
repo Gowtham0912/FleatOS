@@ -57,7 +57,7 @@ async def submit_pairing_request(
     from datetime import datetime, timezone
 
     # 1. Check if the provided code is actually a specific vehicle's pairing code
-    v_res = await db.execute(select(Vehicle).where(Vehicle.pairing_code == payload.account_code))
+    v_res = await db.execute(select(Vehicle).options(joinedload(Vehicle.user)).where(Vehicle.pairing_code == payload.account_code))
     vehicle = v_res.scalar_one_or_none()
     
     if vehicle:
@@ -83,7 +83,9 @@ async def submit_pairing_request(
             device_id=payload.device_id,
             status="approved",
             created_at=datetime.now(timezone.utc),
-            vehicle_name=vehicle.name
+            vehicle_name=vehicle.name,
+            owner_name=vehicle.user.full_name if vehicle.user else None,
+            owner_avatar_url=vehicle.user.avatar_url if vehicle.user else None,
         )
 
     # 2. Otherwise, treat it as an account code

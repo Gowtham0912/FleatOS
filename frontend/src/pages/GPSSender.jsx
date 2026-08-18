@@ -12,10 +12,12 @@ export default function GPSSender() {
   const { user } = useAuth()
   const [searchParams] = useSearchParams()
   const routerLocation = useLocation()
-  const [code, setCode] = useState(searchParams.get('code') || '')
+  const [code, setCode] = useState(() => searchParams.get('code') || localStorage.getItem('fleet_account_code') || '')
   const [deviceId, setDeviceId] = useState('')
   const [status, setStatus] = useState('enter_code') // enter_code, pending, rejected, tracking
-  const [isTracking, setIsTracking] = useState(false)
+  const [isTracking, setIsTracking] = useState(() => localStorage.getItem('fleet_is_tracking') === 'true')
+  const [ownerName, setOwnerName] = useState('')
+  const [ownerAvatar, setOwnerAvatar] = useState(null)
   const [logs, setLogs] = useState([])
   const [location, setLocation] = useState(null)
   const [pingCount, setPingCount] = useState(0)
@@ -128,9 +130,15 @@ export default function GPSSender() {
       if (data.status === 'approved') {
         stopPolling()
         setVehicleName(data.vehicle_name)
+        setOwnerName(data.owner_name || '')
+        setOwnerAvatar(data.owner_avatar_url || null)
         setStatus('tracking')
         addLog('ok', `✅ Device approved! Vehicle: ${data.vehicle_name}`)
-        startTracking()
+        
+        // Auto-resume tracking if we were tracking before refresh
+        if (isTracking) {
+          startTracking()
+        }
       } else if (data.status === 'rejected') {
         stopPolling()
         setStatus('rejected')
@@ -139,6 +147,7 @@ export default function GPSSender() {
         stopTracking()
         setStatus('enter_code')
         localStorage.removeItem('fleet_account_code')
+        localStorage.removeItem('fleet_is_tracking')
       }
     } catch (err) {
       // Keep polling on network error
@@ -163,9 +172,15 @@ export default function GPSSender() {
 
     try {
       const data = await sendPairingRequest(upperCode, deviceId)
+      
+      // Save code for persistence
+      localStorage.setItem('fleet_account_code', upperCode)
+      
       if (data.status === 'approved') {
         setStatus('tracking')
         setVehicleName(data.vehicle_name || '')
+        setOwnerName(data.owner_name || '')
+        setOwnerAvatar(data.owner_avatar_url || null)
         addLog('ok', `✅ Device approved!`)
         startTracking()
       } else if (data.status === 'pending') {
@@ -258,6 +273,7 @@ export default function GPSSender() {
     }
 
     setIsTracking(true)
+    localStorage.setItem('fleet_is_tracking', 'true')
     addLog('info', 'Acquiring high-precision GPS…')
 
     watchIdRef.current = navigator.geolocation.watchPosition(
@@ -275,6 +291,7 @@ export default function GPSSender() {
 
   const stopTracking = () => {
     setIsTracking(false)
+    localStorage.setItem('fleet_is_tracking', 'false')
     if (watchIdRef.current !== null) {
       navigator.geolocation.clearWatch(watchIdRef.current)
       watchIdRef.current = null
@@ -359,7 +376,7 @@ export default function GPSSender() {
             <h2 className="text-sm font-bold text-rose-900 mb-1">Request Rejected</h2>
             <p className="text-xs text-rose-700 mb-4">The account owner rejected your pairing request.</p>
             <button
-              onClick={() => { setStatus('enter_code'); setCode(''); localStorage.removeItem('fleet_account_code') }}
+              onClick={() => { setStatus('enter_code'); setCode(''); localStorage.removeItem('fleet_account_code'); localStorage.removeItem('fleet_is_tracking') }}
               className="bg-white border border-rose-200 text-rose-700 font-bold text-xs py-2 px-4 rounded hover:bg-rose-50 transition-colors cursor-pointer shadow-sm"
             >
               Try Again
@@ -370,20 +387,23 @@ export default function GPSSender() {
         {status === 'tracking' && (
           <div className="space-y-4">
             <div className="bg-white rounded border border-slate-200 p-4 shadow-sm">
-              <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-100">
-                <div className="flex items-center gap-2">
-                  <Smartphone size={16} className="text-slate-400" />
-                  <div>
-                    <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Device ID</p>
-                    <p className="text-xs font-mono font-bold text-slate-700">{deviceId}</p>
+              <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex flex-col">
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Sending to</p>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center font-bold text-xs overflow-hidden shrink-0">
+                      {ownerAvatar ? (
+                        <img src={ownerAvatar.startsWith('http') ? ownerAvatar : `${import.meta.env.VITE_API_BASE_URL || ''}${ownerAvatar}`} alt="Owner" className="w-full h-full object-cover" />
+                      ) : (
+                        (ownerName || 'Fleet')[0].toUpperCase()
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight">{ownerName || 'Fleet Account'}</p>
+                      <p className="text-xs text-brand-primary dark:text-[#17b385] font-semibold">{vehicleName}</p>
+                    </div>
                   </div>
                 </div>
-                {vehicleName && (
-                  <div className="text-right">
-                    <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Linked To</p>
-                    <p className="text-xs font-bold text-brand-primary">{vehicleName}</p>
-                  </div>
-                )}
               </div>
 
               <div className="flex items-center justify-between mb-2">

@@ -482,9 +482,13 @@ async def check_device_pairing_status(
         }
 
     if req.status == "pending":
+        owner = await db.execute(select(User).where(User.id == req.user_id))
+        owner = owner.scalar_one_or_none()
         return {
             "status": "pending",
             "vehicle_name": None,
+            "owner_name": owner.full_name if owner else None,
+            "owner_avatar_url": owner.avatar_url if owner else None,
             "message": "Waiting for account owner to approve your device…",
         }
 
@@ -493,20 +497,25 @@ async def check_device_pairing_status(
         vehicle = None
         if req.vehicle_id:
             v_result = await db.execute(
-                select(Vehicle).where(Vehicle.id == req.vehicle_id)
+                select(Vehicle).options(joinedload(Vehicle.user)).where(Vehicle.id == req.vehicle_id)
             )
             vehicle = v_result.scalar_one_or_none()
         
         if not vehicle:
             v_result = await db.execute(
-                select(Vehicle).where(Vehicle.device_id == device_id)
+                select(Vehicle).options(joinedload(Vehicle.user)).where(Vehicle.device_id == device_id)
             )
             vehicle = v_result.scalar_one_or_none()
 
         if vehicle:
+            owner_name = vehicle.user.full_name if hasattr(vehicle, 'user') and vehicle.user else None
+            owner_avatar = vehicle.user.avatar_url if hasattr(vehicle, 'user') and vehicle.user else None
+            
             return {
                 "status": "approved",
                 "vehicle_name": vehicle.name,
+                "owner_name": owner_name,
+                "owner_avatar_url": owner_avatar,
                 "message": "Device approved! GPS tracking is active.",
             }
 
