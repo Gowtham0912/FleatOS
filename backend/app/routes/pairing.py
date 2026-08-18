@@ -61,6 +61,13 @@ async def submit_pairing_request(
     vehicle = v_res.scalar_one_or_none()
     
     if vehicle:
+        # Block owner from pairing their own vehicle to themselves
+        if current_user and vehicle.user_id == current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You cannot use your own vehicle's pairing code on the GPS sender. Share it with a driver's phone instead.",
+            )
+
         # Bind this device to the existing vehicle
         vehicle.device_id = payload.device_id
         if current_user:
@@ -87,12 +94,15 @@ async def submit_pairing_request(
             detail="Invalid code. Please check and try again.",
         )
 
+    # Block self-pairing: a user cannot use the GPS sender on their own account
+    if current_user and current_user.id == user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot pair your own device to your own account. Share your account code with someone else's phone.",
+        )
+
     sender_id = current_user.id if current_user else None
     req = await create_pairing_request(db, user.id, payload.device_id, sender_id)
-
-    # Auto-approve if the requester is the account owner
-    if current_user and current_user.id == user.id and req.status == "pending":
-        req = await approve_pairing_request(db, req.id, user.id, f"Device {payload.device_id[:6]}")
 
     logger.info(
         "Pairing request %s | device=%s -> user=%s (status=%s)",

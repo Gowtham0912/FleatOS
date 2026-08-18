@@ -144,6 +144,12 @@ export default function GPSSender() {
     }
     const upperCode = c.trim().toUpperCase()
 
+    // Block self-pairing: user cannot pair their own account to themselves
+    if (user && user.account_code && upperCode === user.account_code.toUpperCase()) {
+      setError('This is your own account code. Share it with someone else\'s phone — you cannot track yourself.')
+      return
+    }
+
     setError(null)
     setCode(upperCode)
 
