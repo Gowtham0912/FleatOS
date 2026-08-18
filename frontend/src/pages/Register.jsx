@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { Lock, Mail, User, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react'
+import { Lock, Mail, User, AlertCircle, CheckCircle, Eye, EyeOff, Building2, Car } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { requestRegisterOtp, checkHealth } from '../api/fleetApi'
 import OTPInput from '../components/OTPInput'
@@ -8,6 +8,7 @@ import { motion } from 'framer-motion'
 
 export default function Register() {
   const [step, setStep] = useState(1) // 1: Form, 2: OTP
+  const [role, setRole] = useState('owner') // 'owner' | 'driver'
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -97,8 +98,8 @@ export default function Register() {
     setSuccess(null)
     setIsSubmitting(true)
     try {
-      await register(email, password, fullName, code)
-      navigate(returnTo)
+      await register(email, password, fullName, code, role)
+      navigate(role === 'driver' ? '/gps' : returnTo)
     } catch (err) {
       // Render free tier cold start — auto-retry in 8 seconds
       if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
@@ -156,6 +157,36 @@ export default function Register() {
 
         {step === 1 ? (
           <form onSubmit={handleRequestOtp} className="space-y-4">
+            
+            {/* Role Selector */}
+            <div className="grid grid-cols-2 gap-3 mb-6">
+              <button
+                type="button"
+                onClick={() => setRole('owner')}
+                className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all cursor-pointer ${
+                  role === 'owner'
+                    ? 'border-brand-primary dark:border-[#17b385] bg-brand-primary/5 dark:bg-[#17b385]/10'
+                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-600'
+                }`}
+              >
+                <Building2 size={24} className={`mb-2 ${role === 'owner' ? 'text-brand-primary dark:text-[#17b385]' : 'text-slate-400'}`} />
+                <span className={`text-xs font-semibold ${role === 'owner' ? 'text-brand-primary dark:text-[#17b385]' : 'text-slate-600 dark:text-slate-400'}`}>Fleet Owner</span>
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setRole('driver')}
+                className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all cursor-pointer ${
+                  role === 'driver'
+                    ? 'border-brand-primary dark:border-[#17b385] bg-brand-primary/5 dark:bg-[#17b385]/10'
+                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-600'
+                }`}
+              >
+                <Car size={24} className={`mb-2 ${role === 'driver' ? 'text-brand-primary dark:text-[#17b385]' : 'text-slate-400'}`} />
+                <span className={`text-xs font-semibold ${role === 'driver' ? 'text-brand-primary dark:text-[#17b385]' : 'text-slate-600 dark:text-slate-400'}`}>Driver / Vehicle</span>
+              </button>
+            </div>
+
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Full name</label>
               <div className="relative">

@@ -88,3 +88,8 @@ async def init_db():
             END $$;
         """))
 
+        # Add role column — existing users default to 'owner'
+        await conn.execute(text(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(16) NOT NULL DEFAULT 'owner';"
+        ))
+

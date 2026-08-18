@@ -39,11 +39,11 @@ export async function requestRegisterOtp(email) {
 /**
  * Register a new user account.
  */
-export async function registerUser(email, password, fullName, code) {
+export async function registerUser(email, password, fullName, code, role) {
   const res = await fetch(`${BASE_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password, full_name: fullName, code }),
+    body: JSON.stringify({ email, password, full_name: fullName, code, role }),
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))

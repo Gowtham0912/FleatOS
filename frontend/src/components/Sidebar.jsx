@@ -69,7 +69,6 @@ export default function Sidebar({ isConnected, vehicleCount, isOpen, onClose }) 
     { to: '/',           icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/vehicles',   icon: Truck,           label: 'Vehicles'  },
     { to: '/requests',   icon: Shield,          label: 'Requests', badge: pendingCount },
-    { to: '/gps',        icon: Navigation,      label: 'GPS Sender' },
   ]
 
   const sidebarContent = (

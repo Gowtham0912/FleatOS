@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Routes, Route, useLocation, Outlet } from 'react-router-dom'
+import { Routes, Route, useLocation, Outlet, Navigate } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import Sidebar from './components/Sidebar'
 import TopBar from './components/TopBar'
@@ -19,7 +19,7 @@ import { useAuth } from './context/AuthContext'
  * App — root component with full authentication & route configuration.
  */
 export default function App() {
-  const { isLoading: authLoading } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
   const { lastMessage, isConnected } = useWebSocket()
   const { vehicles, locations, locationHistory, isLoading, error, refresh } = useVehicles(lastMessage)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -60,78 +60,84 @@ export default function App() {
       <Route
         path="/*"
         element={
-          <div className="flex fixed inset-0 overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 transition-colors">
-            <Sidebar
-              isConnected={isConnected}
-              vehicleCount={vehicles.length}
-              isOpen={isMobileMenuOpen}
-              onClose={closeMobileMenu}
-            />
-
-            <main className="flex flex-col flex-1 min-w-0 min-h-0">
-              {error && (
-                <div className="px-4 md:px-6 py-2 bg-rose-100 border-b border-rose-200 text-rose-700 text-xs font-medium">
-                  ⚠ {error}
-                </div>
-              )}
-
-              <TopBar
-                title={getPageTitle(location.pathname)}
+          !user ? (
+            <Navigate to="/login" replace />
+          ) : user.role === 'driver' ? (
+            <Routes location={location} key={location.pathname}>
+              <Route path="gps" element={<GPSSender />} />
+              <Route path="*" element={<Navigate to="/gps" replace />} />
+            </Routes>
+          ) : (
+            <div className="flex fixed inset-0 overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 transition-colors">
+              <Sidebar
                 isConnected={isConnected}
-                lastMessage={lastMessage}
-                onVehicleAdded={refresh}
-                onToggleMobileMenu={toggleMobileMenu}
+                vehicleCount={vehicles.length}
+                isOpen={isMobileMenuOpen}
+                onClose={closeMobileMenu}
               />
 
-              <AnimatePresence mode="wait">
-                <Routes location={location} key={location.pathname}>
-                  <Route
-                    index
-                    element={
-                      <Dashboard
-                        vehicles={vehicles}
-                        locations={locations}
-                        locationHistory={locationHistory}
-                        isLoading={isLoading}
-                        lastMessage={lastMessage}
-                        isConnected={isConnected}
-                        onRefresh={refresh}
-                        onToggleMobileMenu={toggleMobileMenu}
-                      />
-                    }
-                  />
-                  <Route
-                    path="vehicles"
-                    element={
-                      <Vehicles
-                        vehicles={vehicles}
-                        locations={locations}
-                        isLoading={isLoading}
-                        isConnected={isConnected}
-                        lastMessage={lastMessage}
-                        onToggleMobileMenu={toggleMobileMenu}
-                      />
-                    }
-                  />
-                  <Route
-                    path="requests"
-                    element={
-                      <PairingRequests
-                        isConnected={isConnected}
-                        lastMessage={lastMessage}
-                        onRefresh={refresh}
-                        onToggleMobileMenu={toggleMobileMenu}
-                      />
-                    }
-                  />
-                  <Route
-                    path="gps"
-                    element={<GPSSender />}
-                  />
-                </Routes>
-              </AnimatePresence>
-            </main>
-          </div>
+              <main className="flex flex-col flex-1 min-w-0 min-h-0">
+                {error && (
+                  <div className="px-4 md:px-6 py-2 bg-rose-100 border-b border-rose-200 text-rose-700 text-xs font-medium">
+                    ⚠ {error}
+                  </div>
+                )}
+
+                <TopBar
+                  title={getPageTitle(location.pathname)}
+                  isConnected={isConnected}
+                  lastMessage={lastMessage}
+                  onVehicleAdded={refresh}
+                  onToggleMobileMenu={toggleMobileMenu}
+                />
+
+                <AnimatePresence mode="wait">
+                  <Routes location={location} key={location.pathname}>
+                    <Route
+                      index
+                      element={
+                        <Dashboard
+                          vehicles={vehicles}
+                          locations={locations}
+                          locationHistory={locationHistory}
+                          isLoading={isLoading}
+                          lastMessage={lastMessage}
+                          isConnected={isConnected}
+                          onRefresh={refresh}
+                          onToggleMobileMenu={toggleMobileMenu}
+                        />
+                      }
+                    />
+                    <Route
+                      path="vehicles"
+                      element={
+                        <Vehicles
+                          vehicles={vehicles}
+                          locations={locations}
+                          isLoading={isLoading}
+                          isConnected={isConnected}
+                          lastMessage={lastMessage}
+                          onToggleMobileMenu={toggleMobileMenu}
+                        />
+                      }
+                    />
+                    <Route
+                      path="requests"
+                      element={
+                        <PairingRequests
+                          isConnected={isConnected}
+                          lastMessage={lastMessage}
+                          onRefresh={refresh}
+                          onToggleMobileMenu={toggleMobileMenu}
+                        />
+                      }
+                    />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </AnimatePresence>
+              </main>
+            </div>
+          )
         }
       />
     </Routes>

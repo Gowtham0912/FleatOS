@@ -48,6 +48,9 @@ class User(Base):
         String(32), unique=True, index=True, default=generate_account_code, nullable=False
     )
 
+    # Role: 'owner' (manages fleet) or 'driver' (sends GPS only)
+    role: Mapped[str] = mapped_column(String(16), nullable=False, default='owner')
+
     # Vehicles owned by this user
     vehicles: Mapped[list["Vehicle"]] = relationship(
         "Vehicle", foreign_keys="[Vehicle.user_id]", back_populates="user", cascade="all, delete-orphan"

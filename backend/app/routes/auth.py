@@ -87,6 +87,7 @@ async def register(payload: UserRegister, db: AsyncSession = Depends(get_db)):
         email=email,
         password_hash=hash_password(payload.password),
         full_name=payload.full_name.strip(),
+        role=payload.role if payload.role in ('owner', 'driver') else 'owner',
     )
     db.add(user)
     await db.commit()

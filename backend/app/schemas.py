@@ -14,6 +14,7 @@ class UserRegister(BaseModel):
     password: str = Field(..., min_length=6, description="User password (min 6 chars)")
     full_name: str = Field(default="Fleet Owner", description="Display name")
     code: str = Field(..., min_length=6, max_length=6, description="6-digit OTP code")
+    role: str = Field(default="owner", description="Account role: 'owner' or 'driver'")
 
 
 class UserLogin(BaseModel):
@@ -48,6 +49,7 @@ class UserResponse(BaseModel):
     avatar_url: str | None = None
     created_at: datetime
     account_code: str
+    role: str = 'owner'
 
     model_config = {"from_attributes": True}
 

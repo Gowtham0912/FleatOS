@@ -27,8 +27,8 @@ export default function Login() {
     setError(null)
     setIsSubmitting(true)
     try {
-      await login(email, password)
-      navigate(returnTo)
+      const user = await login(email, password)
+      navigate(user.role === 'driver' ? '/gps' : returnTo)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -59,7 +59,7 @@ export default function Login() {
     try {
       const data = await verifyOtpLogin(email, code)
       localStorage.setItem('fleet_token', data.access_token)
-      window.location.href = returnTo
+      window.location.href = data.user.role === 'driver' ? '/gps' : returnTo
     } catch (err) {
       setError(err.message || 'Invalid OTP')
     } finally {

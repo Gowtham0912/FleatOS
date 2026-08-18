@@ -39,8 +39,8 @@ export function AuthProvider({ children }) {
     return data.user
   }
 
-  const register = async (email, password, fullName, code) => {
-    const data = await registerUser(email, password, fullName, code)
+  const register = async (email, password, fullName, code, role) => {
+    const data = await registerUser(email, password, fullName, code, role)
     localStorage.setItem('fleet_token', data.access_token)
     setToken(data.access_token)
     setUser(data.user)
