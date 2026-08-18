@@ -30,12 +30,20 @@ export default function GPSSender() {
   const lastPostTimeRef = useRef(0)
   const wakeLockRef = useRef(null)
 
-  // Derive a stable device ID from the logged-in user's account.
-  // This means the same user always appears as the same "device" regardless
-  // of which browser or phone they use the GPS sender on.
+  // Derive a stable device ID from the logged-in user's name + ID.
+  // Uses the user's full name so it's human-readable in the dashboard,
+  // with the numeric ID suffix to guarantee uniqueness across users.
+  // e.g. "GowthamSankar-42"
   useEffect(() => {
     if (user) {
-      const id = `user-${user.id}`
+      const safeName = (user.full_name || 'user')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '-')        // spaces → hyphens
+        .replace(/[^a-z0-9-]/g, '')  // strip special chars
+        .replace(/-+/g, '-')         // collapse multiple hyphens
+        .replace(/^-|-$/g, '')       // trim leading/trailing hyphens
+      const id = `${safeName || 'user'}-${user.id}`
       // Clean up any old random device ID from localStorage
       localStorage.removeItem('fleet_device_id')
       setDeviceId(id)
