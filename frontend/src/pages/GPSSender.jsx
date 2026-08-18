@@ -362,22 +362,22 @@ export default function GPSSender() {
         )}
 
         {status === 'pending' && (
-          <div className="bg-amber-50 rounded border border-amber-200 p-6 shadow-sm text-center">
+          <div className="bg-amber-50 dark:bg-amber-900/20 rounded border border-amber-200 dark:border-amber-800/50 p-6 shadow-sm text-center transition-colors">
             <img src="/globe.svg" alt="Loading..." className="w-8 h-8 mx-auto mb-3 opacity-80" />
-            <h2 className="text-sm font-bold text-amber-900 mb-1">Waiting for approval…</h2>
-            <p className="text-xs text-amber-700">The account owner needs to approve this device.</p>
-            <p className="text-[10px] text-amber-600 font-mono mt-4">Device ID: {deviceId}</p>
+            <h2 className="text-sm font-bold text-amber-900 dark:text-amber-500 mb-1">Waiting for approval…</h2>
+            <p className="text-xs text-amber-700 dark:text-amber-400">The account owner needs to approve this device.</p>
+            <p className="text-[10px] text-amber-600 dark:text-amber-300 font-mono mt-4">Device ID: {deviceId}</p>
           </div>
         )}
 
         {status === 'rejected' && (
-          <div className="bg-rose-50 rounded border border-rose-200 p-6 shadow-sm text-center">
-            <XCircle size={32} className="text-rose-500 mx-auto mb-3" />
-            <h2 className="text-sm font-bold text-rose-900 mb-1">Request Rejected</h2>
-            <p className="text-xs text-rose-700 mb-4">The account owner rejected your pairing request.</p>
+          <div className="bg-rose-50 dark:bg-rose-900/20 rounded border border-rose-200 dark:border-rose-800/50 p-6 shadow-sm text-center transition-colors">
+            <XCircle size={32} className="text-rose-500 dark:text-rose-400 mx-auto mb-3" />
+            <h2 className="text-sm font-bold text-rose-900 dark:text-rose-500 mb-1">Request Rejected</h2>
+            <p className="text-xs text-rose-700 dark:text-rose-400 mb-4">The account owner rejected your pairing request.</p>
             <button
               onClick={() => { setStatus('enter_code'); setCode(''); localStorage.removeItem('fleet_account_code'); localStorage.removeItem('fleet_is_tracking') }}
-              className="bg-white border border-rose-200 text-rose-700 font-bold text-xs py-2 px-4 rounded hover:bg-rose-50 transition-colors cursor-pointer shadow-sm"
+              className="bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800/50 text-rose-700 dark:text-rose-400 font-bold text-xs py-2 px-4 rounded hover:bg-rose-50 dark:hover:bg-rose-900/40 transition-colors cursor-pointer shadow-sm"
             >
               Try Again
             </button>
@@ -386,7 +386,7 @@ export default function GPSSender() {
 
         {status === 'tracking' && (
           <div className="space-y-4">
-            <div className="bg-white rounded border border-slate-200 p-4 shadow-sm">
+            <div className="bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-800 p-4 shadow-sm transition-colors">
               <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-100 dark:border-slate-800">
                 <div className="flex flex-col">
                   <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider mb-1">Sending to</p>
@@ -407,31 +407,31 @@ export default function GPSSender() {
               </div>
 
               <div className="flex items-center justify-between mb-2">
-                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Status</p>
-                <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-bold ${isTracking ? 'bg-emerald-50 border border-emerald-200 text-emerald-700' : 'bg-slate-100 border border-slate-200 text-slate-600'}`}>
-                  <span className={`w-2 h-2 rounded-full ${isTracking ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">Status</p>
+                <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-bold transition-colors ${isTracking ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400' : 'bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'}`}>
+                  <span className={`w-2 h-2 rounded-full ${isTracking ? 'bg-emerald-500' : 'bg-slate-400 dark:bg-slate-500'}`}></span>
                   {isTracking ? 'Live Streaming' : 'Paused'}
                 </div>
               </div>
 
               <div className="flex items-center justify-between mb-2">
-                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Pings Sent</p>
-                <p className="text-xs font-bold text-slate-700">{pingCount}</p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">Pings Sent</p>
+                <p className="text-xs font-bold text-slate-700 dark:text-white">{pingCount}</p>
               </div>
 
               {location ? (
                 <>
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Coordinates</p>
-                    <p className="text-xs font-mono text-slate-700">{location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}</p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">Coordinates</p>
+                    <p className="text-xs font-mono text-slate-700 dark:text-white">{location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}</p>
                   </div>
                   <div className="flex items-center justify-between">
-                    <p className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Accuracy</p>
-                    <p className="text-xs font-mono text-slate-700">±{Math.round(location.accuracy)}m</p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">Accuracy</p>
+                    <p className="text-xs font-mono text-slate-700 dark:text-white">±{Math.round(location.accuracy)}m</p>
                   </div>
                 </>
               ) : (
-                <div className="text-center py-4 text-xs text-slate-400 italic">
+                <div className="text-center py-4 text-xs text-slate-400 dark:text-slate-500 italic">
                   Waiting for GPS lock...
                 </div>
               )}
@@ -465,9 +465,9 @@ export default function GPSSender() {
               )}
             </div>
 
-            <div className="bg-amber-50 border border-amber-200 rounded p-3 flex items-start gap-2">
-              <AlertCircle size={14} className="text-amber-600 shrink-0 mt-0.5" />
-              <p className="text-[10px] text-amber-800 leading-snug text-left">
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded p-3 flex items-start gap-2 transition-colors">
+              <AlertCircle size={14} className="text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
+              <p className="text-[10px] text-amber-800 dark:text-amber-400 leading-snug text-left">
                 <strong>Keep this tab open!</strong> Mobile browsers pause GPS when minimized. For background tracking, leave screen on.
               </p>
             </div>
