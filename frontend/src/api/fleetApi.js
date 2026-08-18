@@ -2,10 +2,14 @@
  * Fleet API client — REST endpoints wrapper with token authentication.
  */
 
-export const BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.DEV ? '/api' : 'http://localhost:8000')
-).replace(/\/$/, '')
+export const BASE_URL = (() => {
+  const url = import.meta.env.VITE_API_BASE_URL
+  if (url) return url.replace(/\/$/, '')
+  if (import.meta.env.DEV) return '/api'
+  // Production without VITE_API_BASE_URL set — warn loudly instead of silently using localhost
+  console.error('[FleetOS] VITE_API_BASE_URL is not set! Set it in your Vercel environment variables.')
+  return '/api'
+})()
 
 function getAuthHeaders() {
   const token = localStorage.getItem('fleet_token')
