@@ -109,16 +109,18 @@ export default function TopBar({ title, lastMessage, onToggleMobileMenu }) {
           </button>
 
           {/* Connect GPS button */}
-          <button
-            id="connect-phone-btn"
-            onClick={handleConnectClick}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 md:px-3 md:py-1.5 rounded text-xs font-semibold
-                       bg-brand-primary dark:bg-[#17b385] text-white hover:bg-brand-primary/90 dark:hover:bg-[#14a076] transition-colors shadow-sm cursor-pointer"
-          >
-            <Navigation size={13} />
-            <span className="hidden sm:inline">Connect GPS</span>
-            <span className="sm:hidden">Connect</span>
-          </button>
+          {user?.role !== 'driver' && (
+            <button
+              id="connect-phone-btn"
+              onClick={handleConnectClick}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 md:px-3 md:py-1.5 rounded text-xs font-semibold
+                         bg-brand-primary dark:bg-[#17b385] text-white hover:bg-brand-primary/90 dark:hover:bg-[#14a076] transition-colors shadow-sm cursor-pointer"
+            >
+              <Navigation size={13} />
+              <span className="hidden sm:inline">Connect GPS</span>
+              <span className="sm:hidden">Connect</span>
+            </button>
+          )}
 
           {/* User Profile / Login (Rightmost Top Bar) */}
           <div className="pl-2 md:pl-3 relative">

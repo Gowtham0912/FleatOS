@@ -63,10 +63,19 @@ export default function App() {
           !user ? (
             <Navigate to="/login" replace />
           ) : user.role === 'driver' ? (
-            <Routes location={location} key={location.pathname}>
-              <Route path="gps" element={<GPSSender />} />
-              <Route path="*" element={<Navigate to="/gps" replace />} />
-            </Routes>
+            <div className="flex flex-col fixed inset-0 overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 transition-colors">
+              <TopBar
+                title="GPS Sender"
+                isConnected={isConnected}
+                lastMessage={lastMessage}
+              />
+              <main className="flex-1 overflow-y-auto relative min-h-0">
+                <Routes location={location} key={location.pathname}>
+                  <Route path="gps" element={<GPSSender />} />
+                  <Route path="*" element={<Navigate to="/gps" replace />} />
+                </Routes>
+              </main>
+            </div>
           ) : (
             <div className="flex fixed inset-0 overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 transition-colors">
               <Sidebar
