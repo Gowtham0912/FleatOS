@@ -5,6 +5,7 @@ Authentication helper utilities: password hashing and JWT token handling.
 import hashlib
 import hmac
 import logging
+import os
 from datetime import datetime, timedelta
 import jwt
 
