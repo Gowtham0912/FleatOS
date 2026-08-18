@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Lock, Mail, User, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { requestRegisterOtp } from '../api/fleetApi'
+import { requestRegisterOtp, checkHealth } from '../api/fleetApi'
 import OTPInput from '../components/OTPInput'
 import { motion } from 'framer-motion'
 
@@ -18,11 +18,54 @@ export default function Register() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [retryCountdown, setRetryCountdown] = useState(null)
+  const keepAliveRef = useRef(null)
+  const retryTimerRef = useRef(null)
+  const retryFnRef = useRef(null)
   
   const { register } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const returnTo = searchParams.get('returnTo') || '/'
+
+  // Keep Render awake while user is reading their email and entering the OTP.
+  // Pings /health every 25 s so the server never goes back to sleep.
+  useEffect(() => {
+    if (step === 2) {
+      keepAliveRef.current = setInterval(() => {
+        checkHealth().catch(() => {})
+      }, 25000)
+    }
+    return () => {
+      if (keepAliveRef.current) {
+        clearInterval(keepAliveRef.current)
+        keepAliveRef.current = null
+      }
+    }
+  }, [step])
+
+  // Auto-retry countdown cleanup
+  useEffect(() => {
+    return () => {
+      if (retryTimerRef.current) clearInterval(retryTimerRef.current)
+    }
+  }, [])
+
+  const startAutoRetry = (retryFn) => {
+    retryFnRef.current = retryFn
+    let count = 8
+    setRetryCountdown(count)
+    retryTimerRef.current = setInterval(() => {
+      count -= 1
+      setRetryCountdown(count)
+      if (count <= 0) {
+        clearInterval(retryTimerRef.current)
+        retryTimerRef.current = null
+        setRetryCountdown(null)
+        retryFnRef.current?.()
+      }
+    }, 1000)
+  }
 
   const handleRequestOtp = async (e) => {
     e.preventDefault()
@@ -39,6 +82,9 @@ export default function Register() {
       await requestRegisterOtp(email)
       setSuccess('Registration OTP sent to your email.')
       setStep(2)
+      // Pre-warm the Render backend while the user reads their email,
+      // so it's fully awake when they click 'Verify & Register'.
+      // keep-alive interval starts via useEffect above
     } catch (err) {
       setError(err.message || 'Failed to send OTP')
     } finally {
@@ -46,18 +92,34 @@ export default function Register() {
     }
   }
 
-  const handleRegister = async (e) => {
-    e.preventDefault()
+  const doRegister = async () => {
     setError(null)
+    setSuccess(null)
     setIsSubmitting(true)
     try {
       await register(email, password, fullName, code)
       navigate(returnTo)
     } catch (err) {
-      setError(err.message || 'Registration failed')
+      // Render free tier cold start — auto-retry in 8 seconds
+      if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
+        setError('Server is waking up… retrying automatically.')
+        startAutoRetry(doRegister)
+      } else {
+        setError(err.message || 'Registration failed')
+      }
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const handleRegister = (e) => {
+    e.preventDefault()
+    if (retryTimerRef.current) {
+      clearInterval(retryTimerRef.current)
+      retryTimerRef.current = null
+      setRetryCountdown(null)
+    }
+    doRegister()
   }
 
   return (
@@ -194,7 +256,11 @@ export default function Register() {
               disabled={isSubmitting || code.length !== 6}
               className="w-full py-2.5 bg-brand-primary dark:bg-[#17b385] hover:bg-brand-primary/90 dark:hover:bg-[#17b385]/90 text-white font-semibold text-xs rounded shadow-sm transition-colors cursor-pointer disabled:opacity-50 mt-4"
             >
-              {isSubmitting ? 'Verifying…' : 'Verify & Register'}
+              {isSubmitting
+                ? 'Verifying…'
+                : retryCountdown !== null
+                ? `Retrying in ${retryCountdown}s…`
+                : 'Verify & Register'}
             </button>
             
             <button
