@@ -50,58 +50,58 @@ async def init_db():
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
-        # Auto-migrate missing columns for existing tables
-        await conn.execute(text(
-            "ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS user_id BIGINT REFERENCES users(id) ON DELETE CASCADE;"
-        ))
-        await conn.execute(text(
-            "ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS pairing_code VARCHAR(32);"
-        ))
-        await conn.execute(text(
-            "ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS share_code VARCHAR(32);"
-        ))
-        await conn.execute(text(
-            "ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS vehicle_type VARCHAR(32) DEFAULT 'car';"
-        ))
-        await conn.execute(text(
-            "ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS active_session_id VARCHAR(64);"
-        ))
-        await conn.execute(text(
-            "ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS geofence_id BIGINT REFERENCES geofences(id) ON DELETE SET NULL;"
-        ))
-        await conn.execute(text(
-            "UPDATE vehicles SET pairing_code = 'TRK-' || UPPER(SUBSTRING(MD5(RANDOM()::TEXT) FROM 1 FOR 6)) WHERE pairing_code IS NULL;"
-        ))
-        await conn.execute(text(
-            "UPDATE vehicles SET share_code = 'SHR-' || UPPER(SUBSTRING(MD5(RANDOM()::TEXT) FROM 1 FOR 6)) WHERE share_code IS NULL;"
-        ))
+            # Auto-migrate missing columns for existing tables
+            await conn.execute(text(
+                "ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS user_id BIGINT REFERENCES users(id) ON DELETE CASCADE;"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS pairing_code VARCHAR(32);"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS share_code VARCHAR(32);"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS vehicle_type VARCHAR(32) DEFAULT 'car';"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS active_session_id VARCHAR(64);"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS geofence_id BIGINT REFERENCES geofences(id) ON DELETE SET NULL;"
+            ))
+            await conn.execute(text(
+                "UPDATE vehicles SET pairing_code = 'TRK-' || UPPER(SUBSTRING(MD5(RANDOM()::TEXT) FROM 1 FOR 6)) WHERE pairing_code IS NULL;"
+            ))
+            await conn.execute(text(
+                "UPDATE vehicles SET share_code = 'SHR-' || UPPER(SUBSTRING(MD5(RANDOM()::TEXT) FROM 1 FOR 6)) WHERE share_code IS NULL;"
+            ))
 
-        # Add account_code and avatar_url to users table if missing
-        await conn.execute(text(
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS account_code VARCHAR(32);"
-        ))
-        await conn.execute(text(
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(256);"
-        ))
-        # Backfill any users missing an account_code
-        await conn.execute(text(
-            "UPDATE users SET account_code = 'FLT-' || UPPER(SUBSTRING(MD5(RANDOM()::TEXT) FROM 1 FOR 6)) WHERE account_code IS NULL;"
-        ))
-        # Add unique constraint if not present (safe — won't fail if already exists)
-        await conn.execute(text("""
-            DO $$ BEGIN
-                IF NOT EXISTS (
-                    SELECT 1 FROM pg_constraint WHERE conname = 'uq_users_account_code'
-                ) THEN
-                    ALTER TABLE users ADD CONSTRAINT uq_users_account_code UNIQUE (account_code);
-                END IF;
-            END $$;
-        """))
+            # Add account_code and avatar_url to users table if missing
+            await conn.execute(text(
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS account_code VARCHAR(32);"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(256);"
+            ))
+            # Backfill any users missing an account_code
+            await conn.execute(text(
+                "UPDATE users SET account_code = 'FLT-' || UPPER(SUBSTRING(MD5(RANDOM()::TEXT) FROM 1 FOR 6)) WHERE account_code IS NULL;"
+            ))
+            # Add unique constraint if not present (safe — won't fail if already exists)
+            await conn.execute(text("""
+                DO $$ BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1 FROM pg_constraint WHERE conname = 'uq_users_account_code'
+                    ) THEN
+                        ALTER TABLE users ADD CONSTRAINT uq_users_account_code UNIQUE (account_code);
+                    END IF;
+                END $$;
+            """))
 
-        # Add role column — existing users default to 'owner'
-        await conn.execute(text(
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(16) NOT NULL DEFAULT 'owner';"
-        ))
+            # Add role column — existing users default to 'owner'
+            await conn.execute(text(
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(16) NOT NULL DEFAULT 'owner';"
+            ))
     except Exception as e:
         logger.warning(f"Concurrent DB initialization collision or error (usually safe to ignore in multi-worker environments): {e}")
 
