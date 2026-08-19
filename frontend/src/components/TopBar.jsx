@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Activity, Navigation, X, QrCode, Copy, Check, LogOut, User as UserIcon, AlertCircle, Menu, Settings, Moon, Sun } from 'lucide-react'
 import { format } from 'date-fns'
@@ -26,8 +26,14 @@ export default function TopBar({ title, lastMessage, onToggleMobileMenu }) {
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [avatarError, setAvatarError] = useState(false)
   const { user, logout } = useAuth()
   const { isDarkMode, toggleTheme } = useTheme()
+
+  // Reset avatar error when user changes
+  useEffect(() => {
+    setAvatarError(false)
+  }, [user?.avatar_url])
 
   const lastTime = lastMessage?.timestamp
     ? format(new Date(lastMessage.timestamp), 'HH:mm:ss')
@@ -82,19 +88,21 @@ export default function TopBar({ title, lastMessage, onToggleMobileMenu }) {
 
           <div>
             <h1 className="text-sm md:text-base font-bold text-slate-900 dark:text-white leading-tight">{title}</h1>
-            <p className="text-[11px] md:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              {lastTime
-                ? `Last ping: ${lastTime}`
-                : 'Waiting for GPS data…'}
-            </p>
+            {user?.role !== 'driver' && (
+              <p className="text-[11px] md:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {lastTime
+                  ? `Last ping: ${lastTime}`
+                  : 'Waiting for GPS data…'}
+              </p>
+            )}
           </div>
         </div>
 
         <div className="flex items-center gap-2 md:gap-3">
           {/* Activity flash on new message */}
-          {lastMessage && (
-            <div className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-emerald-600 animate-fade-in mr-1" key={lastMessage.timestamp}>
-              <Activity size={13} />
+          {lastMessage && user?.role !== 'driver' && (
+            <div className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-emerald-600 mr-1">
+              <Activity size={13} key={lastMessage.timestamp} className="animate-fade-in" />
               <span>Ping received</span>
             </div>
           )}
@@ -131,8 +139,13 @@ export default function TopBar({ title, lastMessage, onToggleMobileMenu }) {
                   className="flex items-center p-1 -m-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-brand-primary/20 dark:bg-[#17b385]/20 text-brand-primary dark:text-[#17b385] flex items-center justify-center text-xs font-bold shrink-0 overflow-hidden ring-2 ring-transparent hover:ring-brand-primary/30 dark:hover:ring-[#17b385]/30 transition-all">
-                    {user.avatar_url ? (
-                      <img src={`${BASE_URL}${user.avatar_url}`} alt="Avatar" className="w-full h-full object-cover" />
+                    {user.avatar_url && !avatarError ? (
+                      <img 
+                        src={`${BASE_URL}${user.avatar_url}`} 
+                        alt="Avatar" 
+                        className="w-full h-full object-cover"
+                        onError={() => setAvatarError(true)}
+                      />
                     ) : (
                       user.full_name ? user.full_name[0].toUpperCase() : 'U'
                     )}

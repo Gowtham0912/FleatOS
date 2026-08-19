@@ -24,6 +24,9 @@ export default function GPSSender() {
   const [vehicleName, setVehicleName] = useState('')
   const [error, setError] = useState(null)
   const [history, setHistory] = useState([])
+  const [isSimulating, setIsSimulating] = useState(false)
+  const [simLat, setSimLat] = useState(11.436578)
+  const [simLng, setSimLng] = useState(79.533730)
 
   // Refs for intervals/watchers
   const watchIdRef = useRef(null)
@@ -33,6 +36,7 @@ export default function GPSSender() {
   const lastPostTimeRef = useRef(0)
   const wakeLockRef = useRef(null)
   const trackingRef = useRef(isTracking)
+  const simIntervalRef = useRef(null)
 
   // Keep trackingRef in sync with state
   useEffect(() => {
@@ -298,12 +302,28 @@ export default function GPSSender() {
 
     setIsTracking(true)
     localStorage.setItem('fleet_is_tracking', 'true')
-    addLog('info', 'Acquiring high-precision GPS…')
 
     // Claim the active session for this vehicle
     claimVehicleSession(deviceId, sessionIdRef.current).catch(err => {
       addLog('warn', `Session claim warning: ${err.message}`)
     })
+
+    if (isSimulating) {
+      addLog('info', 'Starting simulated GPS movement...')
+      let currentLat = simLat
+      let currentLng = simLng
+      
+      simIntervalRef.current = setInterval(() => {
+        currentLat += 0.0002 // move slowly northeast
+        currentLng += 0.0002
+        setSimLat(currentLat)
+        setSimLng(currentLng)
+        handleLocationUpdate({ coords: { latitude: currentLat, longitude: currentLng, accuracy: 5 } })
+      }, INTERVAL_MS)
+      return
+    }
+
+    addLog('info', 'Acquiring high-precision GPS…')
 
     watchIdRef.current = navigator.geolocation.watchPosition(
       handleLocationUpdate,
@@ -328,6 +348,10 @@ export default function GPSSender() {
     if (intervalIdRef.current !== null) {
       clearInterval(intervalIdRef.current)
       intervalIdRef.current = null
+    }
+    if (simIntervalRef.current !== null) {
+      clearInterval(simIntervalRef.current)
+      simIntervalRef.current = null
     }
 
     stopLocationTracking({ device_id: deviceId, session_id: sessionIdRef.current }).catch(err => {
@@ -512,6 +536,25 @@ export default function GPSSender() {
                 </div>
               )}
             </div>
+            
+            {!isTracking && (
+              <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded p-3 mb-4">
+                <label className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={isSimulating}
+                    onChange={(e) => setIsSimulating(e.target.checked)}
+                    className="rounded border-slate-300 text-brand-primary focus:ring-brand-primary"
+                  />
+                  Simulate Movement (Testing Mode)
+                </label>
+                {isSimulating && (
+                  <div className="mt-2 text-xs text-slate-500">
+                    Will start at {simLat.toFixed(4)}, {simLng.toFixed(4)} and move Northeast.
+                  </div>
+                )}
+              </div>
+            )}
 
             <button
               onClick={toggleTracking}

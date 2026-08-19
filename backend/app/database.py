@@ -9,7 +9,7 @@ from app.config import settings
 # Async engine — uses asyncpg driver for PostgreSQL
 engine = create_async_engine(
     settings.DATABASE_URL,
-    echo=settings.DEBUG,
+    echo=False,
     pool_pre_ping=True,
 )
 

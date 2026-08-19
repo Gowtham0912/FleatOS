@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 from sqlalchemy import (
-    BigInteger, String, Float, DateTime, ForeignKey, func
+    BigInteger, String, Float, DateTime, ForeignKey, func, JSON
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
@@ -98,15 +98,46 @@ class Vehicle(Base):
         BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
 
+    # Assigned Geofence
+    geofence_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger, ForeignKey("geofences.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+
     # Relationships
     user: Mapped[Optional["User"]] = relationship("User", foreign_keys=[user_id], back_populates="vehicles")
     driver: Mapped[Optional["User"]] = relationship("User", foreign_keys=[driver_id])
+    geofence: Mapped[Optional["Geofence"]] = relationship("Geofence", back_populates="vehicles")
     locations: Mapped[list["Location"]] = relationship(
         "Location", back_populates="vehicle", cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:
         return f"<Vehicle id={self.id} name={self.name!r} code={self.pairing_code!r}>"
+
+
+class Geofence(Base):
+    """Represents a geofence zone drawn on the map."""
+
+    __tablename__ = "geofences"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    name: Mapped[str] = mapped_column(String(128), nullable=False)
+    coordinates: Mapped[list] = mapped_column(JSON, nullable=False)  # stores array of {lat, lng} or [lng, lat]
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    # Relationships
+    user: Mapped["User"] = relationship("User")
+    vehicles: Mapped[list["Vehicle"]] = relationship("Vehicle", back_populates="geofence")
+
+    def __repr__(self) -> str:
+        return f"<Geofence id={self.id} name={self.name!r}>"
 
 
 class Location(Base):

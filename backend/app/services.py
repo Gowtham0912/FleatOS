@@ -8,13 +8,16 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
-    Vehicle, Location, User, PairingRequest,
+    Vehicle, Location, User, PairingRequest, Geofence,
     generate_pairing_code, generate_share_code,
 )
-from app.schemas import LocationCreate, VehicleCreate, VehicleUpdate
+from app.schemas import LocationCreate, VehicleCreate, VehicleUpdate, GeofenceCreate
 import math
 from app.osrm import get_map_match
 from app.config import settings
+from app.websocket_manager import manager
+from app.email_utils import send_geofence_alert_email
+import asyncio
 
 
 # ── Vehicle services ────────────────────────────────────────────────────────
@@ -75,7 +78,7 @@ async def get_vehicle_for_approved_device(
     """
     # Case (a): vehicle exists and is claimed by a user
     result = await db.execute(
-        select(Vehicle).options(joinedload(Vehicle.driver)).where(Vehicle.device_id == device_id)
+        select(Vehicle).options(joinedload(Vehicle.driver), joinedload(Vehicle.user)).where(Vehicle.device_id == device_id)
     )
     vehicle = result.scalar_one_or_none()
     if vehicle and vehicle.user_id is not None:
@@ -91,7 +94,7 @@ async def get_vehicle_for_approved_device(
     req = result.scalar_one_or_none()
     if req and req.vehicle_id:
         result = await db.execute(
-            select(Vehicle).options(joinedload(Vehicle.driver)).where(Vehicle.id == req.vehicle_id)
+            select(Vehicle).options(joinedload(Vehicle.driver), joinedload(Vehicle.user)).where(Vehicle.id == req.vehicle_id)
         )
         approved_vehicle = result.scalar_one_or_none()
         if approved_vehicle:
@@ -125,6 +128,37 @@ async def record_location(
             raise ValueError("Logged in from another location")
 
     ts = payload.timestamp or datetime.now(timezone.utc)
+    
+    # Check geofence logic
+    if vehicle.geofence_id:
+        geofence = await get_geofence(db, vehicle.geofence_id)
+        if geofence:
+            is_currently_inside = is_point_in_polygon({"lat": payload.latitude, "lng": payload.longitude}, geofence.coordinates)
+            
+            # Check previous location
+            prev_loc = await get_latest_location(db, vehicle.id)
+            if prev_loc:
+                was_inside = is_point_in_polygon({"lat": prev_loc.latitude, "lng": prev_loc.longitude}, geofence.coordinates)
+                
+                if was_inside and not is_currently_inside:
+                    # Vehicle just left the geofence
+                    alert_data = {
+                        "event": "geofence_alert",
+                        "vehicle_id": vehicle.id,
+                        "vehicle_name": vehicle.name,
+                        "zone_name": geofence.name,
+                        "message": f"{vehicle.name} left zone {geofence.name}",
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    }
+                    asyncio.create_task(manager.broadcast(alert_data))
+                    
+                    if vehicle.user and vehicle.user.email:
+                        # Call synchronously in a task if it's slow, but it's okay for MVP
+                        # email_utils uses httpx.post synchronously! Oh wait, httpx.post is synchronous in email_utils.
+                        # It will block the async loop. So we should run it in a thread.
+                        loop = asyncio.get_running_loop()
+                        loop.run_in_executor(None, send_geofence_alert_email, vehicle.user.email, vehicle.name, geofence.name)
+
 
     location = Location(
         vehicle_id=vehicle.id,
@@ -545,3 +579,54 @@ async def check_device_pairing_status(
     }
 
 
+# ── Geofence services ──────────────────────────────────────────────────────
+
+async def get_geofence(db: AsyncSession, geofence_id: int) -> Geofence | None:
+    result = await db.execute(select(Geofence).where(Geofence.id == geofence_id))
+    return result.scalar_one_or_none()
+
+async def list_geofences(db: AsyncSession, user_id: int) -> list[Geofence]:
+    result = await db.execute(select(Geofence).where(Geofence.user_id == user_id))
+    return list(result.scalars().all())
+
+async def create_geofence(db: AsyncSession, user_id: int, payload: GeofenceCreate) -> Geofence:
+    coords_dict = [{"lat": c.lat, "lng": c.lng} for c in payload.coordinates]
+    geofence = Geofence(
+        user_id=user_id,
+        name=payload.name,
+        coordinates=coords_dict
+    )
+    db.add(geofence)
+    await db.commit()
+    await db.refresh(geofence)
+    return geofence
+
+async def delete_geofence(db: AsyncSession, geofence_id: int, user_id: int) -> bool:
+    geofence = await get_geofence(db, geofence_id)
+    if not geofence or geofence.user_id != user_id:
+        return False
+    await db.delete(geofence)
+    await db.commit()
+    return True
+
+def is_point_in_polygon(point: dict, polygon: list[dict]) -> bool:
+    """Ray-casting algorithm to determine if a point is inside a polygon."""
+    x, y = point.get('lng', 0), point.get('lat', 0)
+    inside = False
+    
+    n = len(polygon)
+    if n < 3:
+        return False
+        
+    p1x, p1y = polygon[0].get('lng', 0), polygon[0].get('lat', 0)
+    for i in range(1, n + 1):
+        p2x, p2y = polygon[i % n].get('lng', 0), polygon[i % n].get('lat', 0)
+        if min(p1y, p2y) < y <= max(p1y, p2y):
+            if x <= max(p1x, p2x):
+                if p1y != p2y:
+                    xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+                if p1x == p2x or x <= xinters:
+                    inside = not inside
+        p1x, p1y = p2x, p2y
+        
+    return inside

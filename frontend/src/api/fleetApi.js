@@ -438,3 +438,49 @@ export async function verifyOtpLogin(email, code) {
   }
   return res.json()
 }
+
+// ── Geofence API ───────────────────────────────────────────────────────────
+
+export async function fetchGeofences() {
+  const res = await fetch(`${BASE_URL}/geofences`, {
+    headers: getAuthHeaders(),
+    cache: 'no-store'
+  })
+  if (!res.ok) throw new Error('Failed to fetch geofences')
+  return res.json()
+}
+
+export async function createGeofence(payload) {
+  const res = await fetch(`${BASE_URL}/geofences`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || 'Failed to create geofence')
+  }
+  return res.json()
+}
+
+export async function deleteGeofence(geofenceId) {
+  const res = await fetch(`${BASE_URL}/geofences/${geofenceId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  })
+  if (!res.ok) throw new Error('Failed to delete geofence')
+  return true
+}
+
+export async function assignVehicleToGeofence(vehicleId, geofenceId) {
+  const res = await fetch(`${BASE_URL}/geofences/vehicles/${vehicleId}/assign`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ geofence_id: geofenceId }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || 'Failed to assign geofence')
+  }
+  return res.json()
+}

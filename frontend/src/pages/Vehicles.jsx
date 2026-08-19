@@ -1,14 +1,26 @@
-import { Truck, MapPin, Clock, Smartphone } from 'lucide-react'
+import { Truck, MapPin, Clock, Smartphone, Car, Bike, Bus, Edit2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { useNavigate } from 'react-router-dom'
-
+import { useState } from 'react'
+import EditVehicleModal from '../components/EditVehicleModal'
 import { motion } from 'framer-motion'
 
 /**
  * Vehicles page — simple clean table view of all tracked devices.
  */
-export default function Vehicles({ vehicles, locations, isLoading, isConnected, lastMessage, onToggleMobileMenu }) {
+export default function Vehicles({ vehicles, locations, isLoading, isConnected, lastMessage, onToggleMobileMenu, onRefresh }) {
   const navigate = useNavigate()
+  const [editingVehicle, setEditingVehicle] = useState(null)
+
+  const getVehicleIcon = (type) => {
+    switch (type) {
+      case 'truck': return <Truck size={14} className="text-brand-primary dark:text-[#17b385] shrink-0" />
+      case 'motorcycle': return <Bike size={14} className="text-brand-primary dark:text-[#17b385] shrink-0" />
+      case 'bus': return <Bus size={14} className="text-brand-primary dark:text-[#17b385] shrink-0" />
+      case 'car':
+      default: return <Car size={14} className="text-brand-primary dark:text-[#17b385] shrink-0" />
+    }
+  }
 
   return (
     <motion.div 
@@ -59,7 +71,7 @@ export default function Vehicles({ vehicles, locations, isLoading, isConnected, 
                 <table className="w-full text-sm text-left min-w-[600px]">
                   <thead>
                     <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 transition-colors">
-                      {['#', 'Name', 'Device ID', 'Coordinates', 'Last Seen', 'Status'].map((h) => (
+                      {['#', 'Name', 'Device ID', 'Coordinates', 'Last Seen', 'Status', 'Actions'].map((h) => (
                         <th key={h} className="px-4 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">
                           {h}
                         </th>
@@ -83,7 +95,7 @@ export default function Vehicles({ vehicles, locations, isLoading, isConnected, 
                           {/* Name */}
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
-                              <Truck size={14} className="text-brand-primary dark:text-[#17b385] shrink-0" />
+                              {getVehicleIcon(v.vehicle_type)}
                               <span className="font-semibold text-slate-900 dark:text-white">{v.name}</span>
                             </div>
                           </td>
@@ -123,6 +135,20 @@ export default function Vehicles({ vehicles, locations, isLoading, isConnected, 
                               {isActive ? 'Active' : loc ? 'Idle' : 'No Signal'}
                             </span>
                           </td>
+
+                          {/* Actions */}
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setEditingVehicle(v)
+                              }}
+                              className="p-1.5 rounded text-slate-400 hover:text-brand-primary dark:hover:text-[#17b385] hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                              title="Edit Vehicle"
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                          </td>
                         </tr>
                       )
                     })}
@@ -133,6 +159,16 @@ export default function Vehicles({ vehicles, locations, isLoading, isConnected, 
           </>
         )}
       </div>
+
+      <EditVehicleModal
+        isOpen={!!editingVehicle}
+        vehicle={editingVehicle}
+        onClose={() => setEditingVehicle(null)}
+        onVehicleUpdated={() => {
+          if (onRefresh) onRefresh()
+          setEditingVehicle(null)
+        }}
+      />
     </motion.div>
   )
 }

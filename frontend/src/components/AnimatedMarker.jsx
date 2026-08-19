@@ -94,9 +94,6 @@ const vehicleIcon = (isSelected, vehicleType = 'car', driverAvatarUrl = null) =>
           align-items: center;
           justify-content: center;
         ">
-          <div style="width: 65%; height: 65%; transform: rotate(0deg); display: flex; align-items: center; justify-content: center;">
-            ${svg}
-          </div>
       </div>
     `,
     iconSize: [36, 36],

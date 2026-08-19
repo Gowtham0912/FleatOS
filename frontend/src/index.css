@@ -207,3 +207,13 @@ html.dark .leaflet-control-layers span {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* ── Radar Pulse Animation ──────────────────────────────────────────────── */
+@keyframes radar-pulse {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(3.5); opacity: 0; }
+}
+
+.radar-animation {
+  animation: radar-pulse 2.5s cubic-bezier(0.1, 0, 0.3, 1) infinite;
+}

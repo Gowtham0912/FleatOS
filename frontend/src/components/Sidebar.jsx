@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom'
 import { LayoutDashboard, Truck, Navigation, Wifi, WifiOff, Shield, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { fetchPairingRequests } from '../api/fleetApi'
+import { FenceIcon } from './icons/FenceIcon'
 
 /**
  * Sidebar — simple clean left navigation panel with mobile drawer support and device status.
@@ -68,6 +69,7 @@ export default function Sidebar({ isConnected, vehicleCount, isOpen, onClose }) 
   const navItems = [
     { to: '/',           icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/vehicles',   icon: Truck,           label: 'Vehicles'  },
+    { to: '/geofences',  icon: FenceIcon,       label: 'Geofences' },
     { to: '/requests',   icon: Shield,          label: 'Requests', badge: pendingCount },
   ]
 

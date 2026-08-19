@@ -6,6 +6,7 @@ import TopBar from './components/TopBar'
 import Dashboard from './pages/Dashboard'
 import Vehicles from './pages/Vehicles'
 import PairingRequests from './pages/PairingRequests'
+import Geofences from './pages/Geofences'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import ForgotPassword from './pages/ForgotPassword'
@@ -44,6 +45,7 @@ export default function App() {
     if (pathname.startsWith('/vehicles')) return 'Vehicles & Devices'
     if (pathname.startsWith('/requests')) return 'Pairing Requests'
     if (pathname.startsWith('/gps')) return 'GPS Sender'
+    if (pathname.startsWith('/geofences')) return 'Geofences'
     return 'Live Map'
   }
 
@@ -130,6 +132,7 @@ export default function App() {
                           isLoading={isLoading}
                           isConnected={isConnected}
                           lastMessage={lastMessage}
+                          onRefresh={refresh}
                           onToggleMobileMenu={toggleMobileMenu}
                         />
                       }
@@ -138,6 +141,19 @@ export default function App() {
                       path="requests"
                       element={
                         <PairingRequests
+                          isConnected={isConnected}
+                          lastMessage={lastMessage}
+                          onRefresh={refresh}
+                          onToggleMobileMenu={toggleMobileMenu}
+                        />
+                      }
+                    />
+                    <Route
+                      path="geofences"
+                      element={
+                        <Geofences
+                          vehicles={vehicles}
+                          locations={locations}
                           isConnected={isConnected}
                           lastMessage={lastMessage}
                           onRefresh={refresh}

@@ -142,6 +142,7 @@ class VehicleResponse(BaseModel):
     user_id: int | None = None
     driver: DriverInfo | None = None
     active_session_id: str | None = None
+    geofence_id: int | None = None
 
     model_config = {"from_attributes": True}
 
@@ -157,6 +158,31 @@ class VehicleUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=128)
     vehicle_type: str | None = Field(default=None, description="Type of vehicle (car, truck, motorcycle, bus)")
 
+
+# ── Geofence schemas ─────────────────────────────────────────────────────────
+
+class Coordinate(BaseModel):
+    lat: float
+    lng: float
+
+class GeofenceCreate(BaseModel):
+    """Payload to create a new geofence."""
+    name: str = Field(..., min_length=1, max_length=128, description="Geofence name")
+    coordinates: list[Coordinate] = Field(..., min_length=3, description="List of coordinates forming the polygon")
+
+class GeofenceResponse(BaseModel):
+    """Geofence info returned to client."""
+    id: int
+    user_id: int
+    name: str
+    coordinates: list[Coordinate]
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+class VehicleGeofenceAssign(BaseModel):
+    """Payload to assign a vehicle to a geofence."""
+    geofence_id: int | None = Field(default=None, description="Geofence ID to assign, or null to remove")
 
 # ── Pairing Request schemas ─────────────────────────────────────────────────
 

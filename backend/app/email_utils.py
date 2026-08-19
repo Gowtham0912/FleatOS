@@ -196,5 +196,62 @@ This code expires in 10 minutes. Do not share it with anyone.
 {footer_note}
 © 2025 FleetOS — Real-time Fleet Tracking
 """
-
     return subject, html_body, plain_body
+
+def send_geofence_alert_email(to_email: str, vehicle_name: str, zone_name: str) -> bool:
+    """Send an alert that a vehicle left its geofence."""
+    logger.info("Geofence alert generated for %s (vehicle=%s, zone=%s)", to_email, vehicle_name, zone_name)
+    
+    if not (settings.GMAIL_CLIENT_ID and settings.GMAIL_CLIENT_SECRET and settings.GMAIL_REFRESH_TOKEN):
+        logger.warning("Gmail OAuth credentials are not set. Cannot send alert email.")
+        return False
+        
+    access_token = _get_gmail_access_token()
+    if not access_token:
+        return False
+        
+    sender = settings.SMTP_EMAIL or "fleetos.official@gmail.com"
+
+    subject = f"Alert: {vehicle_name} left zone {zone_name}"
+    
+    plain_body = f"""Alert!
+    
+Your vehicle "{vehicle_name}" has just left the designated geofence zone "{zone_name}".
+
+Please check your FleetOS dashboard for live tracking.
+
+© 2025 FleetOS — Real-time Fleet Tracking"""
+
+    html_body = f"""<!DOCTYPE html>
+<html lang="en">
+<body>
+  <h2>Geofence Alert</h2>
+  <p>Your vehicle <strong>{vehicle_name}</strong> has just left the designated geofence zone <strong>{zone_name}</strong>.</p>
+  <p>Please check your <a href="http://localhost:5173">FleetOS dashboard</a> for live tracking.</p>
+</body>
+</html>"""
+
+    msg = EmailMessage()
+    msg['From'] = f"FleetOS Alerts <{sender}>"
+    msg['To'] = to_email
+    msg['Subject'] = subject
+    msg.set_content(plain_body)
+    msg.add_alternative(html_body, subtype='html')
+        
+    raw_message = base64.urlsafe_b64encode(msg.as_bytes()).decode('utf-8')
+    
+    try:
+        response = httpx.post(
+            "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json"
+            },
+            json={"raw": raw_message},
+            timeout=10.0
+        )
+        response.raise_for_status()
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send alert email to {to_email}: {e}")
+        return False

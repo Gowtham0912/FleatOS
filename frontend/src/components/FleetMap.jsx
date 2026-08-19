@@ -1,6 +1,6 @@
 import { MapContainer, TileLayer, useMap, LayersControl, LayerGroup, Polyline, CircleMarker, Marker } from 'react-leaflet'
 import L from 'leaflet'
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import AnimatedMarker from './AnimatedMarker'
 import { BASE_URL } from '../api/fleetApi'
@@ -109,7 +109,7 @@ function ThemeTracker() {
  * FleetMap — Leaflet map showing all vehicle markers with smooth
  * real-time interpolation between GPS pings and breadcrumb route trails.
  */
-export default function FleetMap({ vehicles, locations, locationHistory, selectedVehicle, lastWsMessage, onInterpolatedPositions, ownerLocation, ownerUser }) {
+export default function FleetMap({ children, vehicles, locations, locationHistory, selectedVehicle, lastWsMessage, onInterpolatedPositions, ownerLocation, ownerUser }) {
   const [userCenter, setUserCenter] = useState(null)
   const { isDarkMode } = useTheme()
 
@@ -153,21 +153,24 @@ export default function FleetMap({ vehicles, locations, locationHistory, selecte
     ownerAvatarUrl = `${BASE_URL}${ownerAvatarUrl}`
   }
 
-  const ownerIcon = ownerUser ? L.divIcon({
-    className: 'bg-transparent',
-    html: `
-      <div class="relative w-10 h-10">
-        <div class="absolute inset-0 rounded-full border-2 border-[#17b385] overflow-hidden bg-white shadow-md z-10 flex items-center justify-center">
-          <img src="${ownerAvatarUrl || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(ownerUser.full_name || 'Owner') + '&background=f1f5f9&color=64748b'}" 
-               class="w-full h-full object-cover" 
-               alt="Owner" />
+  const ownerIcon = useMemo(() => {
+    if (!ownerUser) return null;
+    return L.divIcon({
+      className: 'bg-transparent',
+      html: `
+        <div class="relative w-10 h-10">
+          <div class="absolute inset-0 rounded-full border-2 border-[#17b385] overflow-hidden bg-white shadow-md z-10 flex items-center justify-center">
+            <img src="${ownerAvatarUrl || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(ownerUser.full_name || 'Owner') + '&background=f1f5f9&color=64748b'}" 
+                 class="w-full h-full object-cover" 
+                 alt="Owner" />
+          </div>
+          <div class="absolute inset-0 rounded-full bg-[#17b385] radar-animation z-0"></div>
         </div>
-        <div class="absolute inset-0 rounded-full bg-[#17b385] opacity-40 animate-ping z-0"></div>
-      </div>
-    `,
-    iconSize: [40, 40],
-    iconAnchor: [20, 20],
-  }) : null
+      `,
+      iconSize: [40, 40],
+      iconAnchor: [20, 20],
+    })
+  }, [ownerUser, ownerAvatarUrl])
 
   return (
     <MapContainer
@@ -243,6 +246,8 @@ export default function FleetMap({ vehicles, locations, locationHistory, selecte
           />
         </LayerGroup>
       )}
+
+      {children}
     </MapContainer>
   )
 }
