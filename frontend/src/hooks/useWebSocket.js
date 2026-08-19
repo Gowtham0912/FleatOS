@@ -34,7 +34,7 @@ export function useWebSocket() {
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data)
-          if (data.event === 'location_update') {
+          if (data.event === 'location_update' || data.event === 'device_offline') {
             setLastMessage(data)
           }
         } catch (err) {

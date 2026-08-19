@@ -39,7 +39,7 @@ export default function VehicleCard({ vehicle, location, isSelected, onSelect, o
   }, [])
 
   const isActive = hasLocation
-    ? Date.now() - new Date(location.timestamp).getTime() < ACTIVE_THRESHOLD_MS
+    ? (vehicle.active_session_id !== null) && (Date.now() - new Date(location.timestamp).getTime() < ACTIVE_THRESHOLD_MS)
     : false
 
   const lastSeen = hasLocation

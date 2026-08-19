@@ -68,6 +68,29 @@ export function useVehicles(wsMessage) {
   useEffect(() => {
     if (!wsMessage || !user) return
 
+    if (wsMessage.event === 'device_offline') {
+      const { vehicle_id } = wsMessage
+      setVehicles((prev) => {
+        const vehicleIndex = prev.findIndex((v) => v.id === vehicle_id)
+        if (vehicleIndex === -1) return prev
+        const updated = [...prev]
+        updated[vehicleIndex] = { ...updated[vehicleIndex], active_session_id: null }
+        return updated
+      })
+      setLocations((locPrev) => {
+        if (!locPrev[vehicle_id]) return locPrev
+        return {
+          ...locPrev,
+          [vehicle_id]: {
+            ...locPrev[vehicle_id],
+            // Set timestamp to 3 minutes ago so it's considered offline immediately
+            timestamp: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+          },
+        }
+      })
+      return
+    }
+
     const { vehicle_id, latitude, longitude, timestamp } = wsMessage
 
     // Only merge WebSocket updates if the vehicle belongs to the logged-in user's fleet!
@@ -82,6 +105,9 @@ export function useVehicles(wsMessage) {
       }
       if (wsMessage.vehicle_type && updated[vehicleIndex].vehicle_type !== wsMessage.vehicle_type) {
         updated[vehicleIndex].vehicle_type = wsMessage.vehicle_type
+      }
+      if (wsMessage.active_session_id !== undefined && updated[vehicleIndex].active_session_id !== wsMessage.active_session_id) {
+        updated[vehicleIndex].active_session_id = wsMessage.active_session_id
       }
 
       setLocations((locPrev) => ({

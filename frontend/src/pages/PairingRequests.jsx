@@ -125,7 +125,7 @@ export default function PairingRequests({ isConnected, lastMessage, onRefresh, o
                         <Smartphone size={18} />
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-slate-900 dark:text-white">New Device</p>
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">{req.sender_name || 'New Device'}</p>
                         <p className="text-xs font-mono text-slate-500 dark:text-slate-400 mt-0.5">{req.device_id}</p>
                         <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
                           Requested {formatDistanceToNow(new Date(req.created_at), { addSuffix: true })}
@@ -166,7 +166,7 @@ export default function PairingRequests({ isConnected, lastMessage, onRefresh, o
                     ) : (
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => { setApproveId(req.id); setVehicleName('') }}
+                          onClick={() => { setApproveId(req.id); setVehicleName(req.sender_name || '') }}
                           disabled={processing === req.id}
                           className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded text-xs font-semibold
                                      bg-brand-accent text-white hover:bg-brand-accent/90 transition-colors
@@ -226,7 +226,7 @@ export default function PairingRequests({ isConnected, lastMessage, onRefresh, o
                   <div className="flex items-center gap-3">
                     <Smartphone size={14} className="text-slate-400 dark:text-slate-500 shrink-0" />
                     <div>
-                      <p className="text-xs font-mono text-slate-600 dark:text-slate-300">{req.device_id}</p>
+                      <p className="text-xs font-bold text-slate-600 dark:text-slate-300">{req.sender_name || req.device_id}</p>
                       <p className="text-[10px] text-slate-400 dark:text-slate-500">
                         {formatDistanceToNow(new Date(req.created_at), { addSuffix: true })}
                       </p>

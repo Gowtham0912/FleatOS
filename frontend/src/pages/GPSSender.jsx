@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, Navigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Navigation, Loader2, XCircle, Play, Square, AlertCircle, Smartphone } from 'lucide-react'
-import { sendPairingRequest, checkPairingStatus, sendLocation } from '../api/fleetApi'
+import { Navigation, Loader2, XCircle, Play, Square, AlertCircle, Smartphone, History, ChevronRight } from 'lucide-react'
+import { sendPairingRequest, checkPairingStatus, sendLocation, stopLocationTracking, claimVehicleSession, fetchPairingHistory } from '../api/fleetApi'
 import { useAuth } from '../context/AuthContext'
 
 const INTERVAL_MS = 1000
@@ -23,6 +23,7 @@ export default function GPSSender() {
   const [pingCount, setPingCount] = useState(0)
   const [vehicleName, setVehicleName] = useState('')
   const [error, setError] = useState(null)
+  const [history, setHistory] = useState([])
 
   // Refs for intervals/watchers
   const watchIdRef = useRef(null)
@@ -31,11 +32,19 @@ export default function GPSSender() {
   const lastPosRef = useRef(null)
   const lastPostTimeRef = useRef(0)
   const wakeLockRef = useRef(null)
+  const trackingRef = useRef(isTracking)
+
+  // Keep trackingRef in sync with state
+  useEffect(() => {
+    trackingRef.current = isTracking
+  }, [isTracking])
+  
+  // Create a unique session ID for this browser tab instance
+  const sessionIdRef = useRef(crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2))
 
   // Derive a stable device ID from the logged-in user's name + ID.
-  // Uses the user's full name so it's human-readable in the dashboard,
-  // with the numeric ID suffix to guarantee uniqueness across users.
-  // e.g. "GowthamSankar-42"
+  // This uses the old format so that previous pairing requests match,
+  // preserving history for existing devices.
   useEffect(() => {
     if (user) {
       const safeName = (user.full_name || 'user')
@@ -99,18 +108,26 @@ export default function GPSSender() {
     }
   }, [])
 
-  // Auto-submit code if it's in URL
+  // Auto-submit code if it's in URL, or auto-resume session on mount
   useEffect(() => {
     if (deviceId && status === 'enter_code') {
       if (code) {
         const urlCode = searchParams.get('code')
         if (urlCode && urlCode === code) {
           submitCode(code)
+        } else if (localStorage.getItem('fleet_is_tracking') === 'true' || localStorage.getItem('fleet_account_code')) {
+          // If we have a saved session, check status to auto-restore tracking
+          checkStatus()
         }
       }
+      
+      // Fetch history for this device
+      fetchPairingHistory(deviceId)
+        .then(data => setHistory(data))
+        .catch(err => console.error('Failed to load pairing history', err))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deviceId]) // run when deviceId is ready
+  }, [deviceId, status]) // run when deviceId is ready or status changes
 
   const startPolling = () => {
     if (pollIdRef.current) clearInterval(pollIdRef.current)
@@ -214,13 +231,14 @@ export default function GPSSender() {
   }
 
   const postGPS = async (pos) => {
+    if (!trackingRef.current) return
     lastPostTimeRef.current = Date.now()
     const { latitude, longitude, accuracy } = pos.coords
     const timestamp = new Date().toISOString()
 
     setLocation({ latitude, longitude, accuracy, timestamp })
 
-    const payload = { device_id: deviceId, latitude, longitude, timestamp }
+    const payload = { device_id: deviceId, latitude, longitude, timestamp, session_id: sessionIdRef.current }
     if (code) payload.account_code = code
 
     try {
@@ -236,6 +254,12 @@ export default function GPSSender() {
         stopTracking()
         stopPolling()
         setStatus('enter_code')
+      } else if (err.message.includes('another location')) {
+        addLog('err', 'Session taken over by another location!')
+        stopTracking()
+        stopPolling()
+        setStatus('enter_code')
+        setError('Logged out: This account started sharing location from another device.')
       } else {
         addLog('err', `Network error: ${err.message}`)
       }
@@ -276,6 +300,11 @@ export default function GPSSender() {
     localStorage.setItem('fleet_is_tracking', 'true')
     addLog('info', 'Acquiring high-precision GPS…')
 
+    // Claim the active session for this vehicle
+    claimVehicleSession(deviceId, sessionIdRef.current).catch(err => {
+      addLog('warn', `Session claim warning: ${err.message}`)
+    })
+
     watchIdRef.current = navigator.geolocation.watchPosition(
       handleLocationUpdate,
       handleLocationError,
@@ -300,6 +329,11 @@ export default function GPSSender() {
       clearInterval(intervalIdRef.current)
       intervalIdRef.current = null
     }
+
+    stopLocationTracking({ device_id: deviceId, session_id: sessionIdRef.current }).catch(err => {
+      addLog('warn', `Failed to notify server: ${err.message}`)
+    })
+
     addLog('info', 'Tracking stopped.')
     releaseWakeLock()
   }
@@ -358,6 +392,48 @@ export default function GPSSender() {
                 Pair Device
               </button>
             </form>
+            
+            {history.length > 0 && (
+              <div className="mt-8 border-t border-slate-100 dark:border-slate-800 pt-6">
+                <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 mb-4">
+                  <History size={16} />
+                  <h3 className="text-xs font-bold uppercase tracking-wider">Previously Connected</h3>
+                </div>
+                <div className="space-y-3">
+                  {history.map((owner) => (
+                    <button
+                      key={owner.id}
+                      onClick={() => {
+                        setCode(owner.account_code)
+                        submitCode(owner.account_code)
+                      }}
+                      className="w-full flex items-center justify-between p-3 rounded bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-800 transition-colors text-left cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center font-bold text-sm overflow-hidden shrink-0">
+                          {owner.avatar_url ? (
+                            <img src={owner.avatar_url.startsWith('http') ? owner.avatar_url : `${import.meta.env.VITE_API_BASE_URL || ''}${owner.avatar_url}`} alt={owner.full_name} className="w-full h-full object-cover" />
+                          ) : (
+                            (owner.full_name || 'Fleet')[0].toUpperCase()
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
+                            {owner.full_name}
+                          </p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">
+                            {owner.account_code}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 group-hover:text-brand-primary dark:group-hover:text-[#17b385] transition-colors">
+                        <ChevronRight size={16} />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

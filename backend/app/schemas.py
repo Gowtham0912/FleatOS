@@ -41,6 +41,18 @@ class OTPVerifyReset(BaseModel):
     new_password: str = Field(..., min_length=6, description="New user password (min 6 chars)")
 
 
+class PasswordChangeOTPRequest(BaseModel):
+    """Payload to request an OTP for password change."""
+    current_password: str = Field(..., description="Current password")
+
+
+class PasswordChangeRequest(BaseModel):
+    """Payload to change password."""
+    current_password: str = Field(..., description="Current password")
+    new_password: str = Field(..., min_length=6, description="New password (min 6 chars)")
+    code: str = Field(..., min_length=6, max_length=6, description="6-digit OTP code")
+
+
 class UserResponse(BaseModel):
     """User profile response."""
     id: int
@@ -63,6 +75,11 @@ class TokenResponse(BaseModel):
 
 # ── Location schemas ────────────────────────────────────────────────────────
 
+class LocationStop(BaseModel):
+    """Payload sent by mobile app or web tracker to stop tracking."""
+    device_id: str = Field(..., min_length=1, max_length=64, description="Unique device identifier")
+    session_id: str | None = Field(default=None, description="Session UUID to prevent spoofing")
+
 class LocationCreate(BaseModel):
     """Payload sent by mobile app or web tracker to POST /location."""
 
@@ -71,6 +88,7 @@ class LocationCreate(BaseModel):
     longitude: float = Field(..., ge=-180.0, le=180.0, description="GPS longitude")
     pairing_code: str | None = Field(default=None, description="Optional private pairing code (TRK-XXXX)")
     account_code: str | None = Field(default=None, description="Optional account code (FLT-XXXXXX) for new pairing flow")
+    session_id: str | None = Field(default=None, description="Session UUID to prevent spoofing")
     timestamp: datetime | None = Field(
         default=None,
         description="Device timestamp (UTC). Server time used if omitted.",
@@ -123,6 +141,7 @@ class VehicleResponse(BaseModel):
     share_code: str
     user_id: int | None = None
     driver: DriverInfo | None = None
+    active_session_id: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -167,6 +186,7 @@ class PairingRequestResponse(BaseModel):
     vehicle_name: str | None = None
     owner_name: str | None = None
     owner_avatar_url: str | None = None
+    sender_name: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -191,6 +211,16 @@ class PairingCheckResponse(BaseModel):
     message: str
 
 
+class ConnectedOwner(BaseModel):
+    """Previously connected owner for a device."""
+    id: int
+    full_name: str
+    avatar_url: str | None = None
+    account_code: str
+    
+    model_config = {"from_attributes": True}
+
+
 # ── WebSocket broadcast payload ─────────────────────────────────────────────
 
 class LocationBroadcast(BaseModel):
@@ -206,5 +236,3 @@ class LocationBroadcast(BaseModel):
     timestamp: datetime
     pairing_code: str | None = None
     share_code: str | None = None
-
-

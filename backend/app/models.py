@@ -76,6 +76,7 @@ class Vehicle(Base):
     )
     name: Mapped[str] = mapped_column(String(128), nullable=False, default="My Vehicle")
     vehicle_type: Mapped[str] = mapped_column(String(32), nullable=False, default="car")
+    active_session_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
 
     # User ownership (optional for legacy/unclaimed vehicles)
     user_id: Mapped[Optional[int]] = mapped_column(

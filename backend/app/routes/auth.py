@@ -12,7 +12,7 @@ from sqlalchemy import select
 
 from app.database import get_db
 from app.models import User, OTPCode
-from app.schemas import UserRegister, UserLogin, UserResponse, TokenResponse, OTPRequest, OTPVerifyLogin, OTPVerifyReset
+from app.schemas import UserRegister, UserLogin, UserResponse, TokenResponse, OTPRequest, OTPVerifyLogin, OTPVerifyReset, PasswordChangeRequest, PasswordChangeOTPRequest
 from app.auth_utils import hash_password, verify_password, create_access_token, decode_access_token
 from app.email_utils import send_otp_email
 import random
@@ -264,3 +264,49 @@ async def login_otp_verify(payload: OTPVerifyLogin, db: AsyncSession = Depends(g
     
     token = create_access_token({"sub": str(user.id), "email": user.email})
     return TokenResponse(access_token=token, user=UserResponse.model_validate(user))
+
+
+@router.post("/change-password/request-otp")
+async def change_password_request_otp(
+    payload: PasswordChangeOTPRequest,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(require_current_user)
+):
+    """Request an OTP to change the user's password."""
+    if not verify_password(payload.current_password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect current password."
+        )
+    return await generate_and_send_otp(user.email, "change_password", db, check_user_exists=True)
+
+
+@router.post("/change-password")
+async def change_password(
+    payload: PasswordChangeRequest,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(require_current_user)
+):
+    """Change the current user's password with OTP verification."""
+    if not verify_password(payload.current_password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect current password."
+        )
+        
+    # Verify OTP
+    res = await db.execute(
+        select(OTPCode)
+        .where(OTPCode.email == user.email, OTPCode.purpose == "change_password", OTPCode.is_used == False)
+        .order_by(OTPCode.created_at.desc())
+        .limit(1)
+    )
+    otp = res.scalar_one_or_none()
+    
+    if not otp or otp.code != payload.code or otp.expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Invalid or expired OTP.")
+    
+    otp.is_used = True
+    user.password_hash = hash_password(payload.new_password)
+    await db.commit()
+    return {"message": "Password changed successfully."}

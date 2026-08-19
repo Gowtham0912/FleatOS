@@ -47,7 +47,33 @@ function ThemeTracker() {
         }
       }
     }
+    
     map.on('baselayerchange', updateTheme)
+    
+    // Initial theme set based on currently checked layer
+    const control = map.getContainer().querySelector('.leaflet-control-layers')
+    if (control) {
+      setTimeout(() => {
+        const checkedInput = control.querySelector('input:checked')
+        if (checkedInput) {
+          const label = checkedInput.closest('label')
+          if (label) {
+            const span = label.querySelector('span')
+            if (span) {
+              const text = span.textContent.trim()
+              const isDark = text === 'Satellite' || text === 'Dark Mode'
+              if (isDark) {
+                control.classList.add('theme-dark-map')
+                control.classList.remove('theme-light-map')
+              } else {
+                control.classList.remove('theme-dark-map')
+                control.classList.add('theme-light-map')
+              }
+            }
+          }
+        }
+      }, 50)
+    }
     
     return () => {
       map.off('baselayerchange', updateTheme)

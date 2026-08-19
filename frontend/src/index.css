@@ -149,6 +149,15 @@ input:autofill:active {
   border-radius: 8px !important;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
   transition: color 0.3s ease;
+  color: #0F172A; /* Default light text */
+}
+
+/* When the app is in dark mode, the map starts dark (Satellite/Dark Mode), so make text white by default */
+html.dark .leaflet-control-layers,
+html.dark .leaflet-control-layers label,
+html.dark .leaflet-control-layers span {
+  color: #FFFFFF !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8) !important;
 }
 
 .leaflet-control-layers-expanded {
@@ -156,12 +165,17 @@ input:autofill:active {
   padding: 10px 12px !important;
 }
 
-.leaflet-control-layers.theme-dark-map {
+/* Explicit JS theme classes */
+.leaflet-control-layers.theme-dark-map,
+.leaflet-control-layers.theme-dark-map label,
+.leaflet-control-layers.theme-dark-map span {
   color: #FFFFFF !important;
   text-shadow: 0 1px 3px rgba(0,0,0,0.8) !important;
 }
 
-.leaflet-control-layers.theme-light-map {
+.leaflet-control-layers.theme-light-map,
+.leaflet-control-layers.theme-light-map label,
+.leaflet-control-layers.theme-light-map span {
   color: #0F172A !important;
   text-shadow: none !important;
 }
@@ -183,4 +197,13 @@ input:autofill:active {
 }
 .leaflet-control-zoom.leaflet-bar a {
   box-shadow: 0 1px 5px rgba(0,0,0,0.2) !important;
+}
+
+/* Hide scrollbar for Landing page / AnimatedBackground */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

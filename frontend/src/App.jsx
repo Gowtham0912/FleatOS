@@ -11,6 +11,7 @@ import Register from './pages/Register'
 import ForgotPassword from './pages/ForgotPassword'
 import ShareView from './pages/ShareView'
 import GPSSender from './pages/GPSSender'
+import Landing from './pages/Landing'
 import { useWebSocket } from './hooks/useWebSocket'
 import { useVehicles } from './hooks/useVehicles'
 import { useAuth } from './context/AuthContext'
@@ -61,7 +62,10 @@ export default function App() {
         path="/*"
         element={
           !user ? (
-            <Navigate to="/login" replace />
+            <Routes location={location} key={location.pathname}>
+              <Route index element={<Landing />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
           ) : user.role === 'driver' ? (
             <div className="flex flex-col fixed inset-0 overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 transition-colors">
               <TopBar

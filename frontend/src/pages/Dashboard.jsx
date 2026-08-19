@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Map, List, Smartphone } from 'lucide-react'
+import { Map, List, Smartphone, LocateFixed } from 'lucide-react'
 import FleetMap from '../components/FleetMap'
 import VehicleList from '../components/VehicleList'
 import TopBar from '../components/TopBar' // Unused, keeping import just in case, but let's remove it
@@ -39,9 +39,21 @@ export default function Dashboard({ vehicles, locations, locationHistory, isLoad
   
   const { user } = useAuth()
   const [ownerLocation, setOwnerLocation] = useState(null)
+  
+  const [showOwnerLocation, setShowOwnerLocation] = useState(() => {
+    return localStorage.getItem('fleet_show_owner_location') !== 'false'
+  })
+
+  const toggleOwnerLocation = () => {
+    setShowOwnerLocation(prev => {
+      const next = !prev
+      localStorage.setItem('fleet_show_owner_location', next)
+      return next
+    })
+  }
 
   useEffect(() => {
-    if (navigator.geolocation && user) {
+    if (showOwnerLocation && navigator.geolocation && user) {
       const watchId = navigator.geolocation.watchPosition(
         (pos) => {
           setOwnerLocation({
@@ -55,8 +67,10 @@ export default function Dashboard({ vehicles, locations, locationHistory, isLoad
         { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
       )
       return () => navigator.geolocation.clearWatch(watchId)
+    } else {
+      setOwnerLocation(null)
     }
-  }, [user])
+  }, [user, showOwnerLocation])
 
   // Interpolated positions from AnimatedMarker for live coordinate display
   const [interpolatedPositions, setInterpolatedPositions] = useState({})
@@ -149,6 +163,15 @@ export default function Dashboard({ vehicles, locations, locationHistory, isLoad
             ownerLocation={ownerLocation}
             ownerUser={user}
           />
+
+          {/* Toggle Owner Location Button */}
+          <button 
+             onClick={toggleOwnerLocation}
+             className="absolute bottom-6 right-4 z-[400] bg-white dark:bg-slate-800 p-2.5 rounded-full shadow-md border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+             title={showOwnerLocation ? "Hide My Location" : "Show My Location"}
+          >
+             <LocateFixed size={20} className={showOwnerLocation ? "text-brand-primary dark:text-[#17b385]" : "text-slate-400"} />
+          </button>
 
           {/* Overlay: no vehicles hint */}
           {!isLoading && vehicles.length === 0 && (

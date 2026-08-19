@@ -10,8 +10,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.schemas import LocationCreate, LocationResponse
-from app.services import record_location, get_matched_location_data
+from app.schemas import LocationCreate, LocationResponse, LocationStop
+from app.services import record_location, get_matched_location_data, get_vehicle_for_approved_device
 from app.websocket_manager import manager
 
 logger = logging.getLogger(__name__)
@@ -59,6 +59,7 @@ async def post_location(
         "vehicle_name": vehicle.name,
         "vehicle_type": vehicle.vehicle_type,
         "driver_avatar_url": vehicle.driver.avatar_url if vehicle.driver else None,
+        "active_session_id": vehicle.active_session_id,
         "latitude": location.latitude,
         "longitude": location.longitude,
         "timestamp": location.timestamp.isoformat(),
@@ -78,4 +79,49 @@ async def post_location(
     )
 
     return location
+
+
+@router.post(
+    "/stop",
+    status_code=status.HTTP_200_OK,
+    summary="Stop GPS tracking from the mobile app",
+)
+async def post_location_stop(
+    payload: LocationStop,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Called when the Android app stops tracking.
+    Broadcasts an offline event to WebSocket clients.
+    """
+    vehicle = await get_vehicle_for_approved_device(db, payload.device_id)
+    if not vehicle:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Vehicle not found or not approved",
+        )
+    
+    # Check for session conflict
+    if payload.session_id and vehicle.active_session_id:
+        if payload.session_id != vehicle.active_session_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Logged in from another location",
+            )
+            
+    # Broadcast device offline event
+    vehicle.active_session_id = None
+    await db.commit()
+
+    broadcast_payload = {
+        "event": "device_offline",
+        "device_id": vehicle.device_id,
+        "vehicle_id": vehicle.id,
+    }
+    
+    await manager.broadcast(broadcast_payload)
+    logger.info("Tracking stopped and broadcast | device=%s", vehicle.device_id)
+    
+    return {"status": "ok"}
+
 

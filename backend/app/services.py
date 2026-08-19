@@ -119,6 +119,11 @@ async def record_location(
             "page and wait for the account owner to approve your device."
         )
 
+    # Check for session conflict (if session tracking is active for this vehicle)
+    if payload.session_id and vehicle.active_session_id:
+        if payload.session_id != vehicle.active_session_id:
+            raise ValueError("Logged in from another location")
+
     ts = payload.timestamp or datetime.now(timezone.utc)
 
     location = Location(

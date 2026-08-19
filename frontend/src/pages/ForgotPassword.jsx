@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Mail, Lock, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react'
 import { requestPasswordReset, resetPassword } from '../api/fleetApi'
 import OTPInput from '../components/OTPInput'
-import { motion } from 'framer-motion'
+import AnimatedBackground from '../components/AnimatedBackground'
 
 export default function ForgotPassword() {
   const [step, setStep] = useState(1) // 1: Email, 2: OTP, 3: New Passwords
@@ -72,13 +72,7 @@ export default function ForgotPassword() {
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }} 
-      animate={{ opacity: 1 }} 
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }}
-      className="min-h-screen w-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 transition-colors"
-    >
+    <AnimatedBackground>
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded shadow-sm max-w-md w-full p-8 transition-colors">
         <div className="flex flex-col items-center text-center mb-6">
           <div className="w-16 h-16 mb-2">
@@ -93,17 +87,17 @@ export default function ForgotPassword() {
         </div>
 
         {error && (
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded flex items-center gap-2 text-xs text-rose-700">
+          <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded flex items-center gap-2 text-xs text-rose-700">
             <AlertCircle size={14} className="shrink-0" />
             <span>{error}</span>
-          </motion.div>
+          </div>
         )}
         
         {success && (
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="mb-4 p-3 bg-brand-accent/10 border border-brand-accent/30 rounded flex items-center gap-2 text-xs text-brand-accent">
+          <div className="mb-4 p-3 bg-brand-accent/10 border border-brand-accent/30 rounded flex items-center gap-2 text-xs text-brand-accent">
             <CheckCircle size={14} className="shrink-0" />
             <span>{success}</span>
-          </motion.div>
+          </div>
         )}
 
         {step === 1 && (
@@ -232,6 +226,6 @@ export default function ForgotPassword() {
           </Link>
         </div>
       </div>
-    </motion.div>
+    </AnimatedBackground>
   )
 }

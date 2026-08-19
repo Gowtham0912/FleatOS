@@ -10,7 +10,7 @@ GET /vehicles/{id}/history — last N locations (auth required)
 
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -205,3 +205,37 @@ async def delete_vehicle_by_id(
     return {"message": f"Vehicle {vehicle_id} deleted successfully."}
 
 
+@router.post(
+    "/{device_id}/session",
+    status_code=status.HTTP_200_OK,
+    summary="Claim the active GPS session for a vehicle",
+)
+async def claim_vehicle_session(
+    device_id: str,
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_current_user),
+):
+    """
+    Called by GPSSender when it starts tracking. 
+    Updates the active_session_id so other devices are locked out.
+    """
+    session_id = payload.get("session_id")
+    if not session_id:
+        raise HTTPException(status_code=400, detail="session_id is required")
+        
+    result = await db.execute(
+        select(Vehicle).where(Vehicle.device_id == device_id)
+    )
+    vehicle = result.scalar_one_or_none()
+    
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+        
+    # Anyone who is the owner or the driver can claim it
+    if vehicle.user_id != current_user.id and vehicle.driver_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized for this vehicle")
+        
+    vehicle.active_session_id = session_id
+    await db.commit()
+    return {"status": "ok"}

@@ -22,6 +22,7 @@ from app.schemas import (
     PairingRequestResponse,
     PairingApprovePayload,
     PairingCheckResponse,
+    ConnectedOwner,
 )
 from app.services import (
     find_user_by_account_code,
@@ -87,6 +88,7 @@ async def submit_pairing_request(
             vehicle_name=vehicle.name,
             owner_name=vehicle.user.full_name if vehicle.user else None,
             owner_avatar_url=vehicle.user.avatar_url if vehicle.user else None,
+            sender_name=current_user.full_name if current_user else None,
         )
 
     # 2. Otherwise, treat it as an account code
@@ -107,6 +109,15 @@ async def submit_pairing_request(
     sender_id = current_user.id if current_user else None
     req = await create_pairing_request(db, user.id, payload.device_id, sender_id)
 
+    vehicle_name = None
+    if req.status == "approved" and req.vehicle_id:
+        from sqlalchemy import select
+        from app.models import Vehicle
+        v_res = await db.execute(select(Vehicle).where(Vehicle.id == req.vehicle_id))
+        veh = v_res.scalar_one_or_none()
+        if veh:
+            vehicle_name = veh.name
+
     logger.info(
         "Pairing request %s | device=%s -> user=%s (status=%s)",
         "created" if req.status == "pending" else "found",
@@ -114,7 +125,19 @@ async def submit_pairing_request(
         user.email,
         req.status,
     )
-    return req
+    
+    return PairingRequestResponse(
+        id=req.id,
+        user_id=req.user_id,
+        device_id=req.device_id,
+        status=req.status,
+        vehicle_id=req.vehicle_id,
+        vehicle_name=vehicle_name,
+        owner_name=user.full_name,
+        owner_avatar_url=user.avatar_url,
+        sender_name=current_user.full_name if current_user else None,
+        created_at=req.created_at,
+    )
 
 
 @router.get(
@@ -131,8 +154,39 @@ async def get_pairing_requests(
     current_user: User = Depends(require_current_user),
 ):
     """Return pairing requests for the logged-in user, optionally filtered by status."""
-    requests = await list_pairing_requests(db, current_user.id, status_filter)
-    return requests
+    from sqlalchemy.orm import joinedload
+    from sqlalchemy import select
+    from app.models import PairingRequest, Vehicle
+
+    stmt = select(PairingRequest).options(joinedload(PairingRequest.sender)).where(PairingRequest.user_id == current_user.id)
+    if status_filter:
+        stmt = stmt.where(PairingRequest.status == status_filter)
+    stmt = stmt.order_by(PairingRequest.created_at.desc())
+    result = await db.execute(stmt)
+    requests = result.scalars().all()
+    
+    response = []
+    for req in requests:
+        vehicle_name = None
+        if req.vehicle_id:
+            v_res = await db.execute(select(Vehicle).where(Vehicle.id == req.vehicle_id))
+            veh = v_res.scalar_one_or_none()
+            if veh:
+                vehicle_name = veh.name
+
+        response.append({
+            "id": req.id,
+            "user_id": req.user_id,
+            "device_id": req.device_id,
+            "status": req.status,
+            "vehicle_id": req.vehicle_id,
+            "vehicle_name": vehicle_name,
+            "owner_name": current_user.full_name,
+            "owner_avatar_url": current_user.avatar_url,
+            "sender_name": req.sender.full_name if req.sender else None,
+            "created_at": req.created_at,
+        })
+    return response
 
 
 @router.post(
@@ -199,3 +253,32 @@ async def check_pairing(
     """GPS sender polls this endpoint to check if the device has been approved."""
     result = await check_device_pairing_status(db, device_id.strip())
     return result
+
+
+@router.get(
+    "/history/{device_id}",
+    response_model=list[ConnectedOwner],
+    summary="Get previously connected owners for a device"
+)
+async def get_device_history(
+    device_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Return a list of unique owners this device has successfully paired with."""
+    from sqlalchemy import select
+    from app.models import PairingRequest, User
+    
+    stmt = (
+        select(User)
+        .join(PairingRequest, PairingRequest.user_id == User.id)
+        .where(
+            PairingRequest.device_id == device_id.strip(),
+            PairingRequest.status == "approved",
+            PairingRequest.vehicle_id.isnot(None)
+        )
+        .distinct()
+    )
+    result = await db.execute(stmt)
+    users = result.scalars().all()
+    
+    return users

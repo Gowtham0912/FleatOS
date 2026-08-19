@@ -74,6 +74,7 @@ export async function loginUser(email, password) {
 export async function fetchCurrentUser() {
   const res = await fetch(`${BASE_URL}/auth/me`, {
     headers: getAuthHeaders(),
+    cache: 'no-store'
   })
   if (!res.ok) throw new Error('Session expired')
   return res.json()
@@ -104,6 +105,7 @@ export async function updateProfile(formData) {
 export async function fetchVehicles() {
   const res = await fetch(`${BASE_URL}/vehicles`, {
     headers: getAuthHeaders(),
+    cache: 'no-store'
   })
   if (!res.ok) throw new Error(`GET /vehicles failed: ${res.status}`)
   return res.json()
@@ -156,6 +158,7 @@ export async function fetchSharedVehicle(shareCode) {
 export async function fetchVehicle(vehicleId) {
   const res = await fetch(`${BASE_URL}/vehicles/${vehicleId}`, {
     headers: getAuthHeaders(),
+    cache: 'no-store'
   })
   if (!res.ok) throw new Error(`GET /vehicles/${vehicleId} failed: ${res.status}`)
   return res.json()
@@ -167,6 +170,7 @@ export async function fetchVehicle(vehicleId) {
 export async function fetchVehicleHistory(vehicleId, limit = 50) {
   const res = await fetch(`${BASE_URL}/vehicles/${vehicleId}/history?limit=${limit}`, {
     headers: getAuthHeaders(),
+    cache: 'no-store'
   })
   if (!res.ok) throw new Error(`GET /vehicles/${vehicleId}/history failed: ${res.status}`)
   return res.json()
@@ -218,9 +222,61 @@ export async function fetchPairingRequests(statusFilter = null) {
     : `${BASE_URL}/pairing/requests`
   const res = await fetch(url, {
     headers: getAuthHeaders(),
+    cache: 'no-store'
   })
   if (!res.ok) throw new Error('Failed to fetch pairing requests')
   return res.json()
+}
+
+export async function claimVehicleSession(deviceId, sessionId) {
+  const res = await fetch(`${BASE_URL}/vehicles/${deviceId}/session`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ session_id: sessionId })
+  })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(data.detail || 'Failed to claim session')
+  }
+  return res.json()
+}
+
+export const requestChangePasswordOTP = async (currentPassword) => {
+  const token = localStorage.getItem('fleet_token')
+  const res = await fetch(`${BASE_URL}/auth/change-password/request-otp`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({ current_password: currentPassword })
+  })
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(error.detail || 'Failed to request OTP')
+  }
+  return await res.json()
+}
+
+export const changePassword = async (currentPassword, newPassword, code) => {
+  const token = localStorage.getItem('fleet_token')
+  const res = await fetch(`${BASE_URL}/auth/change-password`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      current_password: currentPassword,
+      new_password: newPassword,
+      code
+    })
+  })
+  if (!res.ok) {
+    const error = await res.json()
+    throw new Error(error.detail || 'Failed to change password')
+  }
+  return await res.json()
 }
 
 /**
@@ -282,7 +338,35 @@ export async function checkPairingStatus(deviceId) {
   return res.json()
 }
 
+/**
+ * Fetch previously connected owners for a given device ID.
+ */
+export async function fetchPairingHistory(deviceId) {
+  const res = await fetch(`${BASE_URL}/pairing/history/${deviceId}`)
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || 'Failed to fetch pairing history')
+  }
+  return res.json()
+}
+
 // ── Location Tracking API ──────────────────────────────────────────────────
+
+/**
+ * Stop GPS location tracking.
+ */
+export async function stopLocationTracking(payload) {
+  const res = await fetch(`${BASE_URL}/location/stop`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail || 'Failed to stop tracking')
+  }
+  return res.json()
+}
 
 /**
  * Send a GPS location payload to the backend.
