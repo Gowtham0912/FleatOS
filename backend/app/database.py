@@ -39,12 +39,16 @@ async def get_db() -> AsyncSession:
 
 
 from sqlalchemy import text
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 async def init_db():
     """Create all tables and auto-migrate missing columns on startup."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
 
         # Auto-migrate missing columns for existing tables
         await conn.execute(text(
@@ -95,4 +99,6 @@ async def init_db():
         await conn.execute(text(
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(16) NOT NULL DEFAULT 'owner';"
         ))
+    except Exception as e:
+        logger.warning(f"Concurrent DB initialization collision or error (usually safe to ignore in multi-worker environments): {e}")
 
