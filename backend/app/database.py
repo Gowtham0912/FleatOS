@@ -67,6 +67,9 @@ async def init_db():
             "ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS active_session_id VARCHAR(64);"
         ))
         await conn.execute(text(
+            "ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS geofence_id BIGINT REFERENCES geofences(id) ON DELETE SET NULL;"
+        ))
+        await conn.execute(text(
             "UPDATE vehicles SET pairing_code = 'TRK-' || UPPER(SUBSTRING(MD5(RANDOM()::TEXT) FROM 1 FOR 6)) WHERE pairing_code IS NULL;"
         ))
         await conn.execute(text(
