@@ -22,6 +22,7 @@ export default function VehicleCard({ vehicle, location, isSelected, onSelect, o
 
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const menuRef = useRef(null)
+  const [, setTick] = useState(0)
 
   useEffect(() => {
     const id = setInterval(() => setTick(t => t + 1), 30_000)
