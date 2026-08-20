@@ -6,6 +6,9 @@ import logging
 import os
 import uuid
 import shutil
+import base64
+import io
+from PIL import Image
 from fastapi import APIRouter, Depends, HTTPException, status, Header, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -133,19 +136,33 @@ async def update_me(
         user.full_name = full_name.strip()
         
     if avatar is not None:
-        # Create avatars dir if not exists
-        avatars_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static", "avatars")
-        os.makedirs(avatars_dir, exist_ok=True)
-        
-        # Save file
-        ext = avatar.filename.split(".")[-1] if "." in avatar.filename else "jpg"
-        filename = f"{uuid.uuid4().hex}.{ext}"
-        filepath = os.path.join(avatars_dir, filename)
-        
-        with open(filepath, "wb") as buffer:
-            shutil.copyfileobj(avatar.file, buffer)
+        # Read the uploaded image
+        image_bytes = avatar.file.read()
+        try:
+            # Open image using Pillow
+            img = Image.open(io.BytesIO(image_bytes))
             
-        user.avatar_url = f"/static/avatars/{filename}"
+            # Convert to RGB to save space, remove transparency.
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
+                
+            # Resize the image to max 256x256 to save database space
+            img.thumbnail((256, 256))
+            
+            # Save compressed image back to a bytes buffer
+            buffer = io.BytesIO()
+            img.save(buffer, format="JPEG", quality=85)
+            compressed_bytes = buffer.getvalue()
+            
+            # Encode to Base64 data URI
+            b64_str = base64.b64encode(compressed_bytes).decode('utf-8')
+            user.avatar_url = f"data:image/jpeg;base64,{b64_str}"
+        except Exception as e:
+            logger.error(f"Failed to process avatar image: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid image file."
+            )
         
     await db.commit()
     await db.refresh(user)

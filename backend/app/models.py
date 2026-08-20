@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 from sqlalchemy import (
-    BigInteger, String, Float, DateTime, ForeignKey, func, JSON
+    BigInteger, String, Float, DateTime, ForeignKey, func, JSON, Text
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
@@ -36,7 +36,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(128), unique=True, index=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(256), nullable=False)
     full_name: Mapped[str] = mapped_column(String(128), nullable=False, default="Fleet Owner")
-    avatar_url: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
+    avatar_url: Mapped[Optional[str]] = mapped_column(Text(), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

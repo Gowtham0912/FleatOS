@@ -81,7 +81,10 @@ async def init_db():
                 "ALTER TABLE users ADD COLUMN IF NOT EXISTS account_code VARCHAR(32);"
             ))
             await conn.execute(text(
-                "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(256);"
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE users ALTER COLUMN avatar_url TYPE TEXT;"
             ))
             # Backfill any users missing an account_code
             await conn.execute(text(
