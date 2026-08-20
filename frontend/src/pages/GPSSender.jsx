@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, Navigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Navigation, Loader2, XCircle, Play, Square, AlertCircle, Smartphone, History, ChevronRight } from 'lucide-react'
+import { Navigation, Loader2, XCircle, Play, Square, AlertCircle, Smartphone, History, ChevronRight, ChevronLeft } from 'lucide-react'
 import { sendPairingRequest, checkPairingStatus, sendLocation, stopLocationTracking, claimVehicleSession, fetchPairingHistory, getAvatarUrl } from '../api/fleetApi'
 import { useAuth } from '../context/AuthContext'
 
@@ -486,6 +486,19 @@ export default function GPSSender() {
 
         {status === 'tracking' && (
           <div className="space-y-4">
+            {!isTracking && (
+              <button
+                onClick={() => { 
+                  setStatus('enter_code'); 
+                  setCode(''); 
+                  localStorage.removeItem('fleet_account_code'); 
+                  localStorage.removeItem('fleet_is_tracking');
+                }}
+                className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors mb-2 cursor-pointer"
+              >
+                <ChevronLeft size={16} /> Back to Connect
+              </button>
+            )}
             <div className="bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-800 p-4 shadow-sm transition-colors">
               <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-100 dark:border-slate-800">
                 <div className="flex flex-col">
