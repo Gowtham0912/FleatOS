@@ -308,11 +308,6 @@ export default function GPSSender() {
     setIsTracking(true)
     localStorage.setItem('fleet_is_tracking', 'true')
 
-    // Defensive cleanup of any leaked intervals from rapid clicks
-    if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current)
-    if (intervalIdRef.current !== null) clearInterval(intervalIdRef.current)
-    if (simIntervalRef.current !== null) clearInterval(simIntervalRef.current)
-
     // Claim the active session for this vehicle
     claimVehicleSession(deviceId, sessionIdRef.current).catch(err => {
       addLog('warn', `Session claim warning: ${err.message}`)
@@ -376,7 +371,7 @@ export default function GPSSender() {
   }
 
   const toggleTracking = () => {
-    if (trackingRef.current) {
+    if (isTracking) {
       stopTracking()
     } else {
       startTracking()
