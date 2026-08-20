@@ -1,5 +1,7 @@
 import { MapContainer, TileLayer, useMap, LayersControl, LayerGroup, Polyline, CircleMarker, Marker } from 'react-leaflet'
 import L from 'leaflet'
+import { Compass, Focus, Map as MapIcon, Maximize2, Search, Crosshair, Users, Activity } from 'lucide-react'
+import { getAvatarUrl } from '../api/fleetApi'
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import AnimatedMarker from './AnimatedMarker'
@@ -148,10 +150,7 @@ export default function FleetMap({ children, vehicles, locations, locationHistor
       ]
     : null
 
-  let ownerAvatarUrl = ownerUser?.avatar_url
-  if (ownerAvatarUrl && ownerAvatarUrl.startsWith('/')) {
-    ownerAvatarUrl = `${BASE_URL}${ownerAvatarUrl}`
-  }
+  let ownerAvatarUrl = getAvatarUrl(ownerUser?.avatar_url)
 
   const ownerIcon = useMemo(() => {
     if (!ownerUser) return null;

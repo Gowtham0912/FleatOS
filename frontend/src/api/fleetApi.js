@@ -11,6 +11,12 @@ export const BASE_URL = (() => {
   return '/api'
 })()
 
+export function getAvatarUrl(url) {
+  if (!url) return null;
+  if (url.startsWith('data:') || url.startsWith('http')) return url;
+  return `${BASE_URL}${url}`;
+}
+
 function getAuthHeaders() {
   const token = localStorage.getItem('fleet_token')
   const headers = { 'Content-Type': 'application/json' }

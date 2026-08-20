@@ -3,6 +3,7 @@ import { Camera, X, User, CheckCircle, Shield, UserCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { updateProfile, changePassword, requestChangePasswordOTP } from '../api/fleetApi'
 import { useAuth } from '../context/AuthContext'
+import { getAvatarUrl } from '../api/fleetApi'
 
 const BASE_URL = (
   import.meta.env.VITE_API_BASE_URL ||
@@ -16,7 +17,7 @@ export default function SettingsModal({ onClose }) {
   // Profile State
   const [fullName, setFullName] = useState(user?.full_name || '')
   const [avatarFile, setAvatarFile] = useState(null)
-  const [previewUrl, setPreviewUrl] = useState(user?.avatar_url ? `${BASE_URL}${user.avatar_url}` : null)
+  const [previewUrl, setPreviewUrl] = useState(user?.avatar_url ? getAvatarUrl(user.avatar_url) : null)
   const fileInputRef = useRef(null)
 
   // Security State

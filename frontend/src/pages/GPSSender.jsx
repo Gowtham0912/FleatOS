@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, Navigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Navigation, Loader2, XCircle, Play, Square, AlertCircle, Smartphone, History, ChevronRight } from 'lucide-react'
-import { sendPairingRequest, checkPairingStatus, sendLocation, stopLocationTracking, claimVehicleSession, fetchPairingHistory } from '../api/fleetApi'
+import { sendPairingRequest, checkPairingStatus, sendLocation, stopLocationTracking, claimVehicleSession, fetchPairingHistory, getAvatarUrl } from '../api/fleetApi'
 import { useAuth } from '../context/AuthContext'
 
 const INTERVAL_MS = 1000
@@ -436,7 +436,7 @@ export default function GPSSender() {
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center font-bold text-sm overflow-hidden shrink-0">
                           {owner.avatar_url ? (
-                            <img src={owner.avatar_url.startsWith('http') ? owner.avatar_url : `${import.meta.env.VITE_API_BASE_URL || ''}${owner.avatar_url}`} alt={owner.full_name} className="w-full h-full object-cover" />
+                            <img src={getAvatarUrl(owner.avatar_url)} alt={owner.full_name} className="w-full h-full object-cover" />
                           ) : (
                             (owner.full_name || 'Fleet')[0].toUpperCase()
                           )}
@@ -493,7 +493,7 @@ export default function GPSSender() {
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center font-bold text-xs overflow-hidden shrink-0">
                       {ownerAvatar ? (
-                        <img src={ownerAvatar.startsWith('http') ? ownerAvatar : `${import.meta.env.VITE_API_BASE_URL || ''}${ownerAvatar}`} alt="Owner" className="w-full h-full object-cover" />
+                        <img src={getAvatarUrl(ownerAvatar)} alt="Owner" className="w-full h-full object-cover" />
                       ) : (
                         (ownerName || 'Fleet')[0].toUpperCase()
                       )}

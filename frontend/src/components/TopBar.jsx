@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Activity, Navigation, X, QrCode, Copy, Check, LogOut, User as UserIcon, AlertCircle, Menu, Settings, Moon, Sun } from 'lucide-react'
 import { format } from 'date-fns'
 import { useAuth } from '../context/AuthContext'
+import { getAvatarUrl } from '../api/fleetApi'
 import { useTheme } from '../context/ThemeContext'
 import SettingsModal from './SettingsModal'
 
@@ -141,7 +142,7 @@ export default function TopBar({ title, lastMessage, onToggleMobileMenu }) {
                   <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-brand-primary/20 dark:bg-[#17b385]/20 text-brand-primary dark:text-[#17b385] flex items-center justify-center text-xs font-bold shrink-0 overflow-hidden ring-2 ring-transparent hover:ring-brand-primary/30 dark:hover:ring-[#17b385]/30 transition-all">
                     {user.avatar_url && !avatarError ? (
                       <img 
-                        src={`${BASE_URL}${user.avatar_url}`} 
+                        src={getAvatarUrl(user.avatar_url)} 
                         alt="Avatar" 
                         className="w-full h-full object-cover"
                         onError={() => setAvatarError(true)}
