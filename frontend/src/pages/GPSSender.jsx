@@ -43,6 +43,11 @@ export default function GPSSender() {
     trackingRef.current = isTracking
   }, [isTracking])
   
+  const deviceIdRef = useRef(deviceId)
+  useEffect(() => {
+    deviceIdRef.current = deviceId
+  }, [deviceId])
+  
   // Create a unique session ID for this browser tab instance
   const sessionIdRef = useRef(crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2))
 
@@ -354,9 +359,12 @@ export default function GPSSender() {
       simIntervalRef.current = null
     }
 
-    stopLocationTracking({ device_id: deviceId, session_id: sessionIdRef.current }).catch(err => {
-      addLog('warn', `Failed to notify server: ${err.message}`)
-    })
+    const currentDeviceId = deviceIdRef.current || deviceId;
+    if (currentDeviceId) {
+      stopLocationTracking({ device_id: currentDeviceId, session_id: sessionIdRef.current }).catch(err => {
+        addLog('warn', `Failed to notify server: ${err.message}`)
+      })
+    }
 
     addLog('info', 'Tracking stopped.')
     releaseWakeLock()
