@@ -22,7 +22,7 @@ import { useAuth } from './context/AuthContext'
  */
 export default function App() {
   const { user, isLoading: authLoading } = useAuth()
-  const { lastMessage, isConnected } = useWebSocket()
+  const { lastMessage, isConnected, reconnect } = useWebSocket()
   const { vehicles, locations, locationHistory, isLoading, error, refresh } = useVehicles(lastMessage)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
