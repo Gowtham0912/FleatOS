@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Map, MapPin, Shield, Zap, ChevronRight, Moon, Sun } from 'lucide-react'
+import { Map, MapPin, Shield, Zap, ChevronRight, Moon, Sun, Github, Linkedin, Mail } from 'lucide-react'
 import AnimatedBackground from '../components/AnimatedBackground'
 import { useTheme } from '../context/ThemeContext'
 import { FenceIcon } from '../components/icons/FenceIcon'
@@ -139,6 +139,22 @@ export default function Landing() {
             ))}
           </div>
         </motion.section>
+
+        {/* Footer */}
+        <footer className="w-full max-w-6xl mx-auto px-6 mt-16 md:mt-24 pt-6 border-t border-slate-200/50 dark:border-slate-800/50 flex flex-col sm:flex-row items-center justify-between text-sm text-slate-500 dark:text-slate-400">
+          <p>© {new Date().getFullYear()} FleetOS. All rights reserved.</p>
+          <div className="flex items-center gap-4 mt-4 sm:mt-0">
+            <a href="https://github.com/GowthamSankar-dev" target="_blank" rel="noopener noreferrer" className="hover:text-slate-900 dark:hover:text-white transition-colors" title="GitHub">
+              <Github size={18} />
+            </a>
+            <a href="https://www.linkedin.com/in/gowtham-sankar-b141b6351/" target="_blank" rel="noopener noreferrer" className="hover:text-slate-900 dark:hover:text-white transition-colors" title="LinkedIn">
+              <Linkedin size={18} />
+            </a>
+            <a href="mailto:gowthamsankarjayaraman@gmail.com" className="hover:text-slate-900 dark:hover:text-white transition-colors" title="Email">
+              <Mail size={18} />
+            </a>
+          </div>
+        </footer>
 
       </div>
     </AnimatedBackground>

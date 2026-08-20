@@ -32,6 +32,8 @@ export default function App() {
     if (reconnect) reconnect()
   }, [refresh, reconnect])
 
+  const location = useLocation()
+
   if (authLoading) {
     return (
       <div className="fixed inset-0 bg-white flex flex-col items-center justify-center z-[9999]">
@@ -44,8 +46,6 @@ export default function App() {
 
   const toggleMobileMenu = () => setIsMobileMenuOpen((prev) => !prev)
   const closeMobileMenu = () => setIsMobileMenuOpen(false)
-
-  const location = useLocation()
 
   const getPageTitle = (pathname) => {
     if (pathname.startsWith('/vehicles')) return 'Vehicles & Devices'

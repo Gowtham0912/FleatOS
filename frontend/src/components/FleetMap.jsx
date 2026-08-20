@@ -1,6 +1,6 @@
 import { MapContainer, TileLayer, useMap, LayersControl, LayerGroup, Polyline, CircleMarker, Marker } from 'react-leaflet'
 import L from 'leaflet'
-import { Compass, Focus, Map as MapIcon, Maximize2, Search, Crosshair, Users, Activity } from 'lucide-react'
+import { Compass, Focus, Map as MapIcon, Maximize2, Minimize2, Search, Crosshair, Users, Activity } from 'lucide-react'
 import { getAvatarUrl } from '../api/fleetApi'
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { formatDistanceToNow } from 'date-fns'
@@ -108,6 +108,59 @@ function ThemeTracker() {
 }
 
 /**
+ * FullScreenControl — provides a button to toggle full screen mode for the map.
+ */
+function FullScreenControl() {
+  const map = useMap()
+  const [isFullscreen, setIsFullscreen] = useState(false)
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+      setTimeout(() => {
+        map.invalidateSize()
+      }, 100)
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  }, [map])
+
+  const toggleFullscreen = () => {
+    const container = map.getContainer()
+    if (!document.fullscreenElement) {
+      if (container.requestFullscreen) {
+        container.requestFullscreen()
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen()
+      }
+    }
+  }
+
+  return (
+    <div className="leaflet-top leaflet-left" style={{ top: '80px', left: '0px', position: 'absolute', zIndex: 1000 }}>
+      <div className="leaflet-control leaflet-bar">
+        <a 
+          href="#"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            toggleFullscreen()
+          }}
+          title={isFullscreen ? "Exit Full Screen" : "Full Screen"}
+          className="!flex items-center justify-center bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+          style={{ width: '34px', height: '34px' }}
+        >
+          {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+        </a>
+      </div>
+    </div>
+  )
+}
+
+/**
  * FleetMap — Leaflet map showing all vehicle markers with smooth
  * real-time interpolation between GPS pings and breadcrumb route trails.
  */
@@ -180,6 +233,7 @@ export default function FleetMap({ children, vehicles, locations, locationHistor
       attributionControl={false}
     >
       <ThemeTracker />
+      <FullScreenControl />
       
       <LayersControl position="topright">
         <LayersControl.BaseLayer checked={!isDarkMode} name="Satellite">

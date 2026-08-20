@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Activity, Navigation, X, QrCode, Copy, Check, LogOut, User as UserIcon, AlertCircle, Menu, Settings, Moon, Sun } from 'lucide-react'
+import { Activity, Navigation, Plus, X, QrCode, Copy, Check, LogOut, User as UserIcon, AlertCircle, Menu, Settings, Moon, Sun, Bell } from 'lucide-react'
 import { format } from 'date-fns'
 import { useAuth } from '../context/AuthContext'
-import { getAvatarUrl } from '../api/fleetApi'
+import { getAvatarUrl, fetchPairingRequests } from '../api/fleetApi'
 import { useTheme } from '../context/ThemeContext'
 import SettingsModal from './SettingsModal'
 
@@ -25,9 +25,15 @@ export default function TopBar({ title, lastMessage, onToggleMobileMenu }) {
   const [copiedCode, setCopiedCode] = useState(false)
   const [copiedUrl, setCopiedUrl] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [avatarError, setAvatarError] = useState(false)
+  
+  // Notifications state
+  const [notifications, setNotifications] = useState([])
+  const [unreadCount, setUnreadCount] = useState(0)
+  
   const { user, logout } = useAuth()
   const { isDarkMode, toggleTheme } = useTheme()
 
@@ -35,6 +41,56 @@ export default function TopBar({ title, lastMessage, onToggleMobileMenu }) {
   useEffect(() => {
     setAvatarError(false)
   }, [user?.avatar_url])
+
+  // Poll for pairing requests
+  useEffect(() => {
+    if (!user || user.role === 'driver') return
+    const load = async () => {
+      try {
+        const requests = await fetchPairingRequests('pending')
+        setNotifications(prev => {
+          // Keep non-pair notifications
+          const otherNotifs = prev.filter(n => n.type !== 'pair')
+          // Map pending requests to notifications
+          const pairNotifs = requests.map(req => ({
+            id: `pair_${req.id}`,
+            type: 'pair',
+            text: `Pair request from ${req.device_id}`,
+            time: req.created_at,
+            read: false
+          }))
+          return [...pairNotifs, ...otherNotifs].sort((a, b) => new Date(b.time) - new Date(a.time))
+        })
+      } catch { /* ignore */ }
+    }
+    load()
+    const interval = setInterval(load, 10000)
+    return () => clearInterval(interval)
+  }, [user])
+
+  // Listen for geofence alerts
+  useEffect(() => {
+    if (!lastMessage || !user || user.role === 'driver') return
+    if (lastMessage.event === 'geofence_alert') {
+      const newAlert = {
+        id: `alert_${Date.now()}_${Math.random()}`,
+        type: 'alert',
+        text: lastMessage.message || `${lastMessage.vehicle_name} left zone ${lastMessage.zone_name}`,
+        time: lastMessage.timestamp || new Date().toISOString(),
+        read: false
+      }
+      setNotifications(prev => [newAlert, ...prev].slice(0, 50)) // keep last 50
+    }
+  }, [lastMessage, user])
+
+  // Update unread count
+  useEffect(() => {
+    setUnreadCount(notifications.filter(n => !n.read).length)
+  }, [notifications])
+
+  const markAllAsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+  }
 
   const lastTime = lastMessage?.timestamp
     ? format(new Date(lastMessage.timestamp), 'HH:mm:ss')
@@ -123,12 +179,94 @@ export default function TopBar({ title, lastMessage, onToggleMobileMenu }) {
               id="connect-phone-btn"
               onClick={handleConnectClick}
               className="flex items-center gap-1.5 px-2.5 py-1.5 md:px-3 md:py-1.5 rounded text-xs font-semibold
-                         bg-brand-primary dark:bg-[#17b385] text-white hover:bg-brand-primary/90 dark:hover:bg-[#14a076] transition-colors shadow-sm cursor-pointer"
+                         bg-brand-primary dark:bg-[#17b385] text-white hover:bg-brand-primary/90 dark:hover:bg-[#14a076] transition-colors shadow-sm cursor-pointer mr-1 md:mr-2"
             >
-              <Navigation size={13} />
+              <Plus size={16} className="sm:w-[13px] sm:h-[13px]" />
               <span className="hidden sm:inline">Connect GPS</span>
-              <span className="sm:hidden">Connect</span>
             </button>
+          )}
+
+          {/* Notifications Button */}
+          {user?.role !== 'driver' && (
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setShowNotifications(!showNotifications)
+                  setShowProfileMenu(false)
+                  if (!showNotifications) markAllAsRead()
+                }}
+                className="p-1.5 rounded text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer relative"
+                title="Notifications"
+              >
+                <Bell size={18} />
+                {unreadCount > 0 && (
+                  <span className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                )}
+              </button>
+              
+              {showNotifications && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setShowNotifications(false)}
+                  />
+                  <div className="absolute right-0 top-full mt-2 w-72 sm:w-80 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-xl z-50 py-1 animate-fade-in flex flex-col max-h-[80vh]">
+                    <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">Notifications</h3>
+                      {notifications.length > 0 && (
+                        <button 
+                          onClick={markAllAsRead}
+                          className="text-[11px] font-medium text-brand-primary dark:text-[#17b385] hover:underline"
+                        >
+                          Mark all read
+                        </button>
+                      )}
+                    </div>
+                    <div className="overflow-y-auto flex-1">
+                      {notifications.length === 0 ? (
+                        <div className="p-6 text-center text-slate-500 dark:text-slate-400">
+                          <Bell size={24} className="mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">No notifications</p>
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
+                          {notifications.map((n) => (
+                            <div key={n.id} className={`p-3 md:p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${!n.read ? 'bg-slate-50/50 dark:bg-slate-800/30' : ''}`}>
+                              <div className="flex gap-3">
+                                <div className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5 ${
+                                  n.type === 'pair' 
+                                    ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-500' 
+                                    : 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-500'
+                                }`}>
+                                  {n.type === 'pair' ? <Navigation size={14} /> : <AlertCircle size={14} />}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm text-slate-900 dark:text-slate-200 font-medium leading-snug">
+                                    {n.text}
+                                  </p>
+                                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                                    {format(new Date(n.time), 'MMM d, h:mm a')}
+                                  </p>
+                                  {n.type === 'pair' && (
+                                    <Link 
+                                      to="/requests" 
+                                      onClick={() => setShowNotifications(false)}
+                                      className="inline-block mt-2 text-[11px] font-semibold text-brand-primary dark:text-[#17b385] hover:underline"
+                                    >
+                                      View Requests →
+                                    </Link>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           )}
 
           {/* User Profile / Login (Rightmost Top Bar) */}
@@ -136,7 +274,10 @@ export default function TopBar({ title, lastMessage, onToggleMobileMenu }) {
             {user ? (
               <>
                 <button
-                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  onClick={() => {
+                    setShowProfileMenu(!showProfileMenu)
+                    setShowNotifications(false)
+                  }}
                   className="flex items-center p-1 -m-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-brand-primary/20 dark:bg-[#17b385]/20 text-brand-primary dark:text-[#17b385] flex items-center justify-center text-xs font-bold shrink-0 overflow-hidden ring-2 ring-transparent hover:ring-brand-primary/30 dark:hover:ring-[#17b385]/30 transition-all">

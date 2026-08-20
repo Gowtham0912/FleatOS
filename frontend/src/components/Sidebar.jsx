@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Truck, Navigation, Wifi, WifiOff, Shield, X } from 'lucide-react'
+import { LayoutDashboard, Truck, Navigation, Wifi, WifiOff, Shield, X, Github, Linkedin, Mail } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { fetchPairingRequests } from '../api/fleetApi'
 import { FenceIcon } from './icons/FenceIcon'
@@ -137,6 +137,19 @@ export default function Sidebar({ isConnected, vehicleCount, isOpen, onClose }) 
         <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded p-2.5 transition-colors">
           <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Tracked Devices</p>
           <p className="text-base font-bold text-slate-900 dark:text-white mt-0.5">{vehicleCount}</p>
+        </div>
+
+        {/* Social Links */}
+        <div className="flex items-center justify-center gap-4 pt-2">
+          <a href="https://github.com/GowthamSankar-dev" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" title="GitHub">
+            <Github size={16} />
+          </a>
+          <a href="https://www.linkedin.com/in/gowtham-sankar-b141b6351/" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" title="LinkedIn">
+            <Linkedin size={16} />
+          </a>
+          <a href="mailto:gowthamsankarjayaraman@gmail.com" className="text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" title="Email">
+            <Mail size={16} />
+          </a>
         </div>
       </div>
     </div>

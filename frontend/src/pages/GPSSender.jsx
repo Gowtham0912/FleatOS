@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, Navigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Navigation, Loader2, XCircle, Play, Square, AlertCircle, Smartphone, History, ChevronRight, ChevronLeft } from 'lucide-react'
+import { Navigation, Loader2, XCircle, Play, Square, AlertCircle, Smartphone, History, ChevronRight, ChevronLeft, Github, Linkedin, Mail } from 'lucide-react'
 import { sendPairingRequest, checkPairingStatus, sendLocation, stopLocationTracking, claimVehicleSession, fetchPairingHistory, getAvatarUrl } from '../api/fleetApi'
 import { useAuth } from '../context/AuthContext'
 
@@ -389,11 +389,12 @@ export default function GPSSender() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950 p-4 md:p-6 transition-colors"
+      className="flex flex-col flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950 transition-colors"
     >
-      <div className="max-w-md mx-auto w-full space-y-4">
+      <div className="flex-1 p-4 md:p-6 flex flex-col justify-center">
+        <div className="max-w-md mx-auto w-full space-y-4">
 
-        {status === 'enter_code' && (
+          {status === 'enter_code' && (
           <div className="bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-800 p-6 shadow-sm transition-colors">
             <div className="text-center mb-6">
               <div className="w-12 h-12 bg-brand-primary/10 text-brand-primary dark:text-[#17b385] rounded flex items-center justify-center mx-auto mb-3">
@@ -613,7 +614,24 @@ export default function GPSSender() {
             </div>
           </div>
         )}
+        </div>
       </div>
+
+      {/* Footer */}
+      <footer className="sticky bottom-0 z-10 w-full bg-slate-50 dark:bg-slate-950 border-t border-slate-200/50 dark:border-slate-800/50 py-4 flex flex-col items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mt-auto">
+        <div className="flex items-center gap-4">
+          <a href="https://github.com/GowthamSankar-dev" target="_blank" rel="noopener noreferrer" className="hover:text-slate-900 dark:hover:text-white transition-colors" title="GitHub">
+            <Github size={18} />
+          </a>
+          <a href="https://www.linkedin.com/in/gowtham-sankar-b141b6351/" target="_blank" rel="noopener noreferrer" className="hover:text-slate-900 dark:hover:text-white transition-colors" title="LinkedIn">
+            <Linkedin size={18} />
+          </a>
+          <a href="mailto:gowthamsankarjayaraman@gmail.com" className="hover:text-slate-900 dark:hover:text-white transition-colors" title="Email">
+            <Mail size={18} />
+          </a>
+        </div>
+        <p className="text-[11px]">&copy; {new Date().getFullYear()} FleetOS. All rights reserved.</p>
+      </footer>
     </motion.div>
   )
 }
