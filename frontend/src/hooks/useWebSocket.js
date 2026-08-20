@@ -1,12 +1,22 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 
 const WS_URL = (() => {
-  if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL;
+  if (import.meta.env.VITE_WS_URL) {
+    console.log('[WS] Using VITE_WS_URL:', import.meta.env.VITE_WS_URL);
+    return import.meta.env.VITE_WS_URL;
+  }
   const apiBase = import.meta.env.VITE_API_BASE_URL;
   if (apiBase) {
-    const wsBase = apiBase.replace(/^http/, 'ws');
-    return `${wsBase.replace(/\/$/, '')}/ws`;
+    let wsBase = apiBase.replace(/^http/, 'ws');
+    // If they omitted http:// or https://, force wss://
+    if (!wsBase.startsWith('ws')) {
+        wsBase = `wss://${wsBase}`;
+    }
+    const derived = `${wsBase.replace(/\/$/, '')}/ws`;
+    console.log('[WS] Derived WS_URL from VITE_API_BASE_URL:', derived);
+    return derived;
   }
+  console.log('[WS] No environment variables found, falling back to localhost');
   return 'ws://localhost:8000/ws';
 })();
 const RECONNECT_DELAY_MS = 3000
