@@ -49,6 +49,9 @@ export function AuthProvider({ children }) {
 
   const logout = () => {
     localStorage.removeItem('fleet_token')
+    localStorage.removeItem('fleet_account_code')
+    localStorage.removeItem('fleet_is_tracking')
+    localStorage.removeItem('fleet_device_id')
     setToken(null)
     setUser(null)
   }

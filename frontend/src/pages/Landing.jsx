@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Map, MapPin, Shield, Zap, ChevronRight, Moon, Sun } from 'lucide-react'
 import AnimatedBackground from '../components/AnimatedBackground'
 import { useTheme } from '../context/ThemeContext'
+import { FenceIcon } from '../components/icons/FenceIcon'
 
 export default function Landing() {
   const { isDarkMode, toggleTheme } = useTheme()
@@ -13,17 +14,17 @@ export default function Landing() {
       description: "Monitor your fleet's exact location in real-time with sub-second latency updates directly to your dashboard."
     },
     {
-      icon: <Shield className="text-blue-500" size={24} />,
+      icon: <Shield className="text-brand-primary dark:text-[#17b385]" size={24} />,
       title: "Secure Device Pairing",
       description: "Approve devices securely using one-time pairing codes and manage access permissions for every vehicle."
     },
     {
-      icon: <MapPin className="text-rose-500" size={24} />,
-      title: "Location History",
-      description: "Playback past routes and analyze fleet efficiency with our high-performance mapping engine."
+      icon: <FenceIcon className="text-brand-primary dark:text-[#17b385]" size={24} />,
+      title: "Geofencing Alerts",
+      description: "Create virtual boundaries and receive instant notifications when vehicles enter or exit designated zones."
     },
     {
-      icon: <Zap className="text-amber-500" size={24} />,
+      icon: <Zap className="text-brand-primary dark:text-[#17b385]" size={24} />,
       title: "Role-Based Dashboards",
       description: "Dedicated interfaces for both Fleet Owners and Drivers, tailored to their specific tracking and management needs."
     }

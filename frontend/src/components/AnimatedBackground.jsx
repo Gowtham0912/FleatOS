@@ -38,7 +38,7 @@ export default function AnimatedBackground({ children, centerContent = true }) {
         </MapContainer>
 
         {/* Overlay to ensure content is readable on top of the map */}
-        <div className="absolute inset-0 bg-white/60 dark:bg-slate-950/60 pointer-events-none z-[400] transition-colors" />
+        <div className="absolute inset-0 bg-slate-100/80 dark:bg-slate-950/80 pointer-events-none z-[400] transition-colors" />
       </div>
 
       {/* Content wrapper */}

@@ -83,7 +83,6 @@ export function useVehicles(wsMessage) {
           ...locPrev,
           [vehicle_id]: {
             ...locPrev[vehicle_id],
-            // Set timestamp to 3 minutes ago so it's considered offline immediately
             timestamp: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
           },
         }
@@ -98,34 +97,37 @@ export function useVehicles(wsMessage) {
       const vehicleIndex = prev.findIndex((v) => v.id === vehicle_id)
       if (vehicleIndex === -1) return prev
 
-      // Update name/type if changed
       const updated = [...prev]
+      let changed = false
+
       if (wsMessage.vehicle_name && updated[vehicleIndex].name !== wsMessage.vehicle_name) {
-        updated[vehicleIndex].name = wsMessage.vehicle_name
+        updated[vehicleIndex] = { ...updated[vehicleIndex], name: wsMessage.vehicle_name }
+        changed = true
       }
       if (wsMessage.vehicle_type && updated[vehicleIndex].vehicle_type !== wsMessage.vehicle_type) {
-        updated[vehicleIndex].vehicle_type = wsMessage.vehicle_type
+        updated[vehicleIndex] = { ...updated[vehicleIndex], vehicle_type: wsMessage.vehicle_type }
+        changed = true
       }
       if (wsMessage.active_session_id !== undefined && updated[vehicleIndex].active_session_id !== wsMessage.active_session_id) {
-        updated[vehicleIndex].active_session_id = wsMessage.active_session_id
+        updated[vehicleIndex] = { ...updated[vehicleIndex], active_session_id: wsMessage.active_session_id }
+        changed = true
       }
 
-      setLocations((locPrev) => ({
-        ...locPrev,
-        [vehicle_id]: { ...locPrev[vehicle_id], ...wsMessage },
-      }))
+      return changed ? updated : prev
+    })
 
-      setLocationHistory((histPrev) => {
-        const existing = histPrev[vehicle_id] || []
-        // Keep last 60 points (1 minute of history at 1 ping/sec)
-        const updatedHistory = [...existing, wsMessage].slice(-60)
-        return {
-          ...histPrev,
-          [vehicle_id]: updatedHistory
-        }
-      })
+    setLocations((locPrev) => ({
+      ...locPrev,
+      [vehicle_id]: { ...locPrev[vehicle_id], ...wsMessage },
+    }))
 
-      return updated
+    setLocationHistory((histPrev) => {
+      const existing = histPrev[vehicle_id] || []
+      const updatedHistory = [...existing, wsMessage].slice(-60)
+      return {
+        ...histPrev,
+        [vehicle_id]: updatedHistory
+      }
     })
   }, [wsMessage, user])
 
