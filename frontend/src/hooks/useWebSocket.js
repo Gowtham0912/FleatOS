@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws'
+const WS_URL = (() => {
+  if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL;
+  const apiBase = import.meta.env.VITE_API_BASE_URL;
+  if (apiBase) {
+    const wsBase = apiBase.replace(/^http/, 'ws');
+    return `${wsBase.replace(/\/$/, '')}/ws`;
+  }
+  return 'ws://localhost:8000/ws';
+})();
 const RECONNECT_DELAY_MS = 3000
 
 /**
