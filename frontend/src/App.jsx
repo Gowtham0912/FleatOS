@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { Routes, Route, useLocation, Outlet, Navigate } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import Sidebar from './components/Sidebar'
@@ -25,6 +25,12 @@ export default function App() {
   const { lastMessage, isConnected } = useWebSocket()
   const { vehicles, locations, locationHistory, isLoading, error, refresh } = useVehicles(lastMessage)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
+  // Wrapper to manually resync both REST API and WebSocket when the user clicks Refresh
+  const handleRefresh = useCallback(() => {
+    refresh()
+    if (reconnect) reconnect()
+  }, [refresh, reconnect])
 
   if (authLoading) {
     return (
@@ -102,7 +108,7 @@ export default function App() {
                   title={getPageTitle(location.pathname)}
                   isConnected={isConnected}
                   lastMessage={lastMessage}
-                  onVehicleAdded={refresh}
+                  onVehicleAdded={handleRefresh}
                   onToggleMobileMenu={toggleMobileMenu}
                 />
 
@@ -118,7 +124,7 @@ export default function App() {
                           isLoading={isLoading}
                           lastMessage={lastMessage}
                           isConnected={isConnected}
-                          onRefresh={refresh}
+                          onRefresh={handleRefresh}
                           onToggleMobileMenu={toggleMobileMenu}
                         />
                       }
@@ -132,7 +138,7 @@ export default function App() {
                           isLoading={isLoading}
                           isConnected={isConnected}
                           lastMessage={lastMessage}
-                          onRefresh={refresh}
+                          onRefresh={handleRefresh}
                           onToggleMobileMenu={toggleMobileMenu}
                         />
                       }
@@ -143,7 +149,7 @@ export default function App() {
                         <PairingRequests
                           isConnected={isConnected}
                           lastMessage={lastMessage}
-                          onRefresh={refresh}
+                          onRefresh={handleRefresh}
                           onToggleMobileMenu={toggleMobileMenu}
                         />
                       }
@@ -156,7 +162,7 @@ export default function App() {
                           locations={locations}
                           isConnected={isConnected}
                           lastMessage={lastMessage}
-                          onRefresh={refresh}
+                          onRefresh={handleRefresh}
                           onToggleMobileMenu={toggleMobileMenu}
                         />
                       }
