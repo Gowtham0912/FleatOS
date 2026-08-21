@@ -50,11 +50,11 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # ── CORS — allow all origins so the phone browser can reach the API ────────
+    # ── CORS — allow specific origins from configuration ────────
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=False,
+        allow_origins=settings.ALLOWED_ORIGINS,
+        allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
